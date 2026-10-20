@@ -1,0 +1,12 @@
+.venv/
+node_modules/
+dist/
+__pycache__/
+.pytest_cache/
+.env
+.runtime/
+*.log
+coverage/
+*.tsbuildinfo
+# transient pip download/build dirs
+pip-*/

@@ -1,0 +1,37 @@
+services:
+  db:
+    image: postgres:17
+    environment:
+      POSTGRES_DB: fishingnet
+      POSTGRES_USER: fishingnet
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}
+    volumes: ["postgres-data:/var/lib/postgresql/data"]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U fishingnet"]
+      interval: 5s
+      retries: 12
+  migrate:
+    build: {context: ., dockerfile: infra/Dockerfile.api}
+    environment:
+      DATABASE_URL: postgresql+psycopg://fishingnet:${POSTGRES_PASSWORD}@db:5432/fishingnet
+    command: ["alembic", "upgrade", "head"]
+    depends_on: {db: {condition: service_healthy}}
+  api:
+    build: {context: ., dockerfile: infra/Dockerfile.api}
+    environment: &app-env
+      DATABASE_URL: postgresql+psycopg://fishingnet:${POSTGRES_PASSWORD}@db:5432/fishingnet
+      SETUP_TOKEN: ${SETUP_TOKEN:?Set SETUP_TOKEN in .env}
+      MASTER_KEY: ${MASTER_KEY:?Set MASTER_KEY in .env}
+      APP_ORIGIN: http://127.0.0.1:5173
+    depends_on: {migrate: {condition: service_completed_successfully}}
+  worker:
+    build: {context: ., dockerfile: infra/Dockerfile.api}
+    environment: *app-env
+    command: ["python", "-m", "app.jobs.worker"]
+    depends_on: {migrate: {condition: service_completed_successfully}}
+  web:
+    build: {context: ., dockerfile: infra/Dockerfile.web}
+    ports: ["127.0.0.1:5173:80"]
+    depends_on: [api]
+volumes:
+  postgres-data:

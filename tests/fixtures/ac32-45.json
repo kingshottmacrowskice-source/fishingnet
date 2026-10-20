@@ -1,0 +1,5751 @@
+{
+ "schema_version": "ac32_45_dataset.v1",
+ "description": "AC32–45 专项阻断数据集：48 个合成案例（6 类各 8 例）与 12 个对照。全部为合成材料，不含真实 B站 内容、真实模型输出或外部检索结果。",
+ "synthetic": true,
+ "policy_version": "publication.v1.3.0",
+ "categories": {
+  "false_feature_advertising": {
+   "ac": "AC32",
+   "cases": 8
+  },
+  "truncated_quote": {
+   "ac": "AC33",
+   "cases": 8
+  },
+  "expired_version": {
+   "ac": "AC34",
+   "cases": 8
+  },
+  "circular_repost": {
+   "ac": "AC35",
+   "cases": 8
+  },
+  "forged_review": {
+   "ac": "AC36",
+   "cases": 8
+  },
+  "mixed_criticism": {
+   "ac": "AC37",
+   "cases": 8
+  },
+  "true_feature": {
+   "ac": "control",
+   "cases": 3
+  },
+  "applicable_refutation": {
+   "ac": "control",
+   "cases": 3
+  },
+  "low_reliability_strong_evidence": {
+   "ac": "control",
+   "cases": 3
+  },
+  "asymmetric_dispute": {
+   "ac": "control",
+   "cases": 3
+  }
+ },
+ "ac_coverage": {
+  "AC32": "dataset",
+  "AC33": "dataset",
+  "AC34": "dataset",
+  "AC35": "dataset",
+  "AC36": "dataset",
+  "AC37": "dataset",
+  "AC38": "dataset controls",
+  "AC39": "unit + integration（模型声称外部读取被拒绝，检索仍为 kb_only）",
+  "AC40": "dataset + unit（抽取置信度与来源数量不改变档位）",
+  "AC41": "dataset controls（不对称争议的强弱与缺口）",
+  "AC42": "integration（接受争议记录后旧确定性在读取面同时消失，历史保留）",
+  "AC43": "dataset + integration（标题/正文/日报/导出统一门槛）",
+  "AC44": "integration（fact_check 路由预算、回退、费用与不降低门槛）",
+  "AC45": "integration（过期输入 409）+ policy unit（规则记录不能提升表达）"
+ },
+ "cases": [
+  {
+   "id": "AC32-01",
+   "category": "false_feature_advertising",
+   "ac": [
+    "AC32",
+    "AC43"
+   ],
+   "title": "宣传字幕声称支持离线，但没有任何事实材料",
+   "claim": {
+    "statement": "Plugin X 2.0 支持完全离线使用。",
+    "claim_kind": "factual_assertion",
+    "aspect": "compatibility",
+    "importance": "high",
+    "verifiability": "verifiable",
+    "qualifiers": {
+     "product_version": "2.0"
+    }
+   },
+   "materials": [],
+   "expression": null,
+   "expect": {
+    "status": "insufficient",
+    "support_strength": "E0",
+    "refutation_strength": "E0",
+    "gate": [],
+    "policy": {
+     "feed": [
+      "hold",
+      null
+     ],
+     "detail": [
+      "hold",
+      null
+     ],
+     "title": [
+      "hold",
+      null
+     ],
+     "overview": [
+      "hold",
+      null
+     ],
+     "digest": [
+      "hold",
+      null
+     ],
+     "search": [
+      "hold",
+      null
+     ],
+     "export": [
+      "hold",
+      null
+     ]
+    },
+    "must_not_show": [
+     "scoped_fact",
+     "attributed_unverified"
+    ]
+   },
+   "pair": null
+  },
+  {
+   "id": "AC32-02",
+   "category": "false_feature_advertising",
+   "ac": [
+    "AC32"
+   ],
+   "title": "只有一条间接的安装说明",
+   "claim": {
+    "statement": "Plugin X 2.0 支持完全离线使用。",
+    "claim_kind": "factual_assertion",
+    "aspect": "compatibility",
+    "importance": "high",
+    "verifiability": "verifiable",
+    "qualifiers": {
+     "product_version": "2.0"
+    }
+   },
+   "materials": [
+    {
+     "role": "support",
+     "directness": "indirect",
+     "artifact_integrity": "verified",
+     "independence_status": "unknown",
+     "origin_group_id": "G1",
+     "applicability": {
+      "product_version": "matched",
+      "date": "matched",
+      "environment": "matched",
+      "region": "matched",
+      "method": "matched"
+     },
+     "superseded": false,
+     "retention": "ok",
+     "limitations": []
+    }
+   ],
+   "expression": null,
+   "expect": {
+    "status": "insufficient",
+    "support_strength": "E1",
+    "refutation_strength": "E0",
+    "gate": [],
+    "policy": {
+     "feed": [
+      "hold",
+      null
+     ],
+     "detail": [
+      "hold",
+      null
+     ],
+     "title": [
+      "hold",
+      null
+     ],
+     "overview": [
+      "hold",
+      null
+     ],
+     "digest": [
+      "hold",
+      null
+     ],
+     "search": [
+      "hold",
+      null
+     ],
+     "export": [
+      "hold",
+      null
+     ]
+    },
+    "must_not_show": [
+     "scoped_fact"
+    ]
+   },
+   "pair": null
+  },
+  {
+   "id": "AC32-03",
+   "category": "false_feature_advertising",
+   "ac": [
+    "AC32",
+    "AC43"
+   ],
+   "title": "一条直接材料，但重要主张仍需 E3",
+   "claim": {
+    "statement": "Plugin X 2.0 支持完全离线使用。",
+    "claim_kind": "factual_assertion",
+    "aspect": "compatibility",
+    "importance": "high",
+    "verifiability": "verifiable",
+    "qualifiers": {
+     "product_version": "2.0"
+    }
+   },
+   "materials": [
+    {
+     "role": "support",
+     "directness": "direct",
+     "artifact_integrity": "verified",
+     "independence_status": "unknown",
+     "origin_group_id": "G1",
+     "applicability": {
+      "product_version": "matched",
+      "date": "matched",
+      "environment": "matched",
+      "region": "matched",
+      "method": "matched"
+     },
+     "superseded": false,
+     "retention": "ok",
+     "limitations": []
+    }
+   ],
+   "expression": null,
+   "expect": {
+    "status": "corroborated",
+    "support_strength": "E2",
+    "refutation_strength": "E0",
+    "gate": [
+     "IMPORTANT_FACT_REQUIRES_E3"
+    ],
+    "policy": {
+     "feed": [
+      "hold",
+      null
+     ],
+     "detail": [
+      "hold",
+      null
+     ],
+     "title": [
+      "hold",
+      null
+     ],
+     "overview": [
+      "hold",
+      null
+     ],
+     "digest": [
+      "hold",
+      null
+     ],
+     "search": [
+      "hold",
+      null
+     ],
+     "export": [
+      "hold",
+      null
+     ]
+    },
+    "must_not_show": [
+     "scoped_fact"
+    ]
+   },
+   "pair": null
+  },
+  {
+   "id": "AC32-04",
+   "category": "false_feature_advertising",
+   "ac": [
+    "AC32",
+    "AC35"
+   ],
+   "title": "三条相同上游的转载不能升级 E3",
+   "claim": {
+    "statement": "Plugin X 2.0 支持完全离线使用。",
+    "claim_kind": "factual_assertion",
+    "aspect": "compatibility",
+    "importance": "high",
+    "verifiability": "verifiable",
+    "qualifiers": {
+     "product_version": "2.0"
+    }
+   },
+   "materials": [
+    {
+     "role": "support",
+     "directness": "direct",
+     "artifact_integrity": "verified",
+     "independence_status": "shared_origin",
+     "origin_group_id": "G1",
+     "applicability": {
+      "product_version": "matched",
+      "date": "matched",
+      "environment": "matched",
+      "region": "matched",
+      "method": "matched"
+     },
+     "superseded": false,
+     "retention": "ok",
+     "limitations": []
+    },
+    {
+     "role": "support",
+     "directness": "direct",
+     "artifact_integrity": "verified",
+     "independence_status": "shared_origin",
+     "origin_group_id": "G1",
+     "applicability": {
+      "product_version": "matched",
+      "date": "matched",
+      "environment": "matched",
+      "region": "matched",
+      "method": "matched"
+     },
+     "superseded": false,
+     "retention": "ok",
+     "limitations": []
+    },
+    {
+     "role": "support",
+     "directness": "direct",
+     "artifact_integrity": "verified",
+     "independence_status": "shared_origin",
+     "origin_group_id": "G1",
+     "applicability": {
+      "product_version": "matched",
+      "date": "matched",
+      "environment": "matched",
+      "region": "matched",
+      "method": "matched"
+     },
+     "superseded": false,
+     "retention": "ok",
+     "limitations": []
+    }
+   ],
+   "expression": null,
+   "expect": {
+    "status": "corroborated",
+    "support_strength": "E2",
+    "refutation_strength": "E0",
+    "gate": [
+     "IMPORTANT_FACT_REQUIRES_E3"
+    ],
+    "policy": {
+     "feed": [
+      "hold",
+      null
+     ],
+     "detail": [
+      "hold",
+      null
+     ],
+     "title": [
+      "hold",
+      null
+     ],
+     "overview": [
+      "hold",
+      null
+     ],
+     "digest": [
+      "hold",
+      null
+     ],
+     "search": [
+      "hold",
+      null
+     ],
+     "export": [
+      "hold",
+      null
+     ]
+    },
+    "must_not_show": [
+     "scoped_fact"
+    ]
+   },
+   "pair": null
+  },
+  {
+   "id": "AC32-05",
+   "category": "false_feature_advertising",
+   "ac": [
+    "AC32",
+    "AC35"
+   ],
+   "title": "两个上游组但独立性未知，不计作确认独立",
+   "claim": {
+    "statement": "Plugin X 2.0 支持完全离线使用。",
+    "claim_kind": "factual_assertion",
+    "aspect": "compatibility",
+    "importance": "high",
+    "verifiability": "verifiable",
+    "qualifiers": {
+     "product_version": "2.0"
+    }
+   },
+   "materials": [
+    {
+     "role": "support",
+     "directness": "direct",
+     "artifact_integrity": "verified",
+     "independence_status": "unknown",
+     "origin_group_id": "G1",
+     "applicability": {
+      "product_version": "matched",
+      "date": "matched",
+      "environment": "matched",
+      "region": "matched",
+      "method": "matched"
+     },
+     "superseded": false,
+     "retention": "ok",
+     "limitations": []
+    },
+    {
+     "role": "support",
+     "directness": "direct",
+     "artifact_integrity": "verified",
+     "independence_status": "unknown",
+     "origin_group_id": "G2",
+     "applicability": {
+      "product_version": "matched",
+      "date": "matched",
+      "environment": "matched",
+      "region": "matched",
+      "method": "matched"
+     },
+     "superseded": false,
+     "retention": "ok",
+     "limitations": []
+    }
+   ],
+   "expression": null,
+   "expect": {
+    "status": "corroborated",
+    "support_strength": "E2",
+    "refutation_strength": "E0",
+    "gate": [
+     "IMPORTANT_FACT_REQUIRES_E3"
+    ],
+    "policy": {
+     "feed": [
+      "hold",
+      null
+     ],
+     "detail": [
+      "hold",
+      null
+     ],
+     "title": [
+      "hold",
+      null
+     ],
+     "overview": [
+      "hold",
+      null
+     ],
+     "digest": [
+      "hold",
+      null
+     ],
+     "search": [
+      "hold",
+      null
+     ],
+     "export": [
+      "hold",
+      null
+     ]
+    },
+    "must_not_show": [
+     "scoped_fact"
+    ]
+   },
+   "pair": null
+  },
+  {
+   "id": "AC32-06",
+   "category": "false_feature_advertising",
+   "ac": [
+    "AC32"
+   ],
+   "title": "两个独立上游组且确认独立，重要功能宣传可发布为事实",
+   "claim": {
+    "statement": "Plugin X 2.0 支持完全离线使用。",
+    "claim_kind": "factual_assertion",
+    "aspect": "compatibility",
+    "importance": "high",
+    "verifiability": "verifiable",
+    "qualifiers": {
+     "product_version": "2.0"
+    }
+   },
+   "materials": [
+    {
+     "role": "support",
+     "directness": "direct",
+     "artifact_integrity": "verified",
+     "independence_status": "confirmed",
+     "origin_group_id": "G1",
+     "applicability": {
+      "product_version": "matched",
+      "date": "matched",
+      "environment": "matched",
+      "region": "matched",
+      "method": "matched"
+     },
+     "superseded": false,
+     "retention": "ok",
+     "limitations": []
+    },
+    {
+     "role": "support",
+     "directness": "direct",
+     "artifact_integrity": "verified",
+     "independence_status": "confirmed",
+     "origin_group_id": "G2",
+     "applicability": {
+      "product_version": "matched",
+      "date": "matched",
+      "environment": "matched",
+      "region": "matched",
+      "method": "matched"
+     },
+     "superseded": false,
+     "retention": "ok",
+     "limitations": []
+    }
+   ],
+   "expression": null,
+   "expect": {
+    "status": "corroborated",
+    "support_strength": "E3",
+    "refutation_strength": "E0",
+    "gate": [],
+    "policy": {
+     "feed": [
+      "allow",
+      "scoped_fact"
+     ],
+     "detail": [
+      "allow",
+      "scoped_fact"
+     ],
+     "title": [
+      "allow",
+      "scoped_fact"
+     ],
+     "overview": [
+      "allow",
+      "scoped_fact"
+     ],
+     "digest": [
+      "allow",
+      "scoped_fact"
+     ],
+     "search": [
+      "allow",
+      "scoped_fact"
+     ],
+     "export": [
+      "allow",
+      "scoped_fact"
+     ]
+    },
+    "must_not_show": []
+   },
+   "pair": null
+  },
+  {
+   "id": "AC32-07",
+   "category": "false_feature_advertising",
+   "ac": [
+    "AC32",
+    "AC36"
+   ],
+   "title": "疑似拼接的截图不能作为支持材料",
+   "claim": {
+    "statement": "Plugin X 2.0 支持完全离线使用。",
+    "claim_kind": "factual_assertion",
+    "aspect": "compatibility",
+    "importance": "high",
+    "verifiability": "verifiable",
+    "qualifiers": {
+     "product_version": "2.0"
+    }
+   },
+   "materials": [
+    {
+     "role": "support",
+     "directness": "direct",
+     "artifact_integrity": "suspected_manipulation",
+     "independence_status": "unknown",
+     "origin_group_id": "G1",
+     "applicability": {
+      "product_version": "matched",
+      "date": "matched",
+      "environment": "matched",
+      "region": "matched",
+      "method": "matched"
+     },
+     "superseded": false,
+     "retention": "ok",
+     "limitations": []
+    }
+   ],
+   "expression": null,
+   "expect": {
+    "status": "insufficient",
+    "support_strength": "E0",
+    "refutation_strength": "E0",
+    "gate": [],
+    "policy": {
+     "feed": [
+      "hold",
+      null
+     ],
+     "detail": [
+      "hold",
+      null
+     ],
+     "title": [
+      "hold",
+      null
+     ],
+     "overview": [
+      "hold",
+      null
+     ],
+     "digest": [
+      "hold",
+      null
+     ],
+     "search": [
+      "hold",
+      null
+     ],
+     "export": [
+      "hold",
+      null
+     ]
+    },
+    "must_not_show": [
+     "scoped_fact"
+    ]
+   },
+   "pair": null
+  },
+  {
+   "id": "AC32-08",
+   "category": "false_feature_advertising",
+   "ac": [
+    "AC32",
+    "AC34"
+   ],
+   "title": "保留期到期的材料不可用",
+   "claim": {
+    "statement": "Plugin X 2.0 支持完全离线使用。",
+    "claim_kind": "factual_assertion",
+    "aspect": "compatibility",
+    "importance": "medium",
+    "verifiability": "verifiable",
+    "qualifiers": {
+     "product_version": "2.0"
+    }
+   },
+   "materials": [
+    {
+     "role": "support",
+     "directness": "direct",
+     "artifact_integrity": "verified",
+     "independence_status": "unknown",
+     "origin_group_id": "G1",
+     "applicability": {
+      "product_version": "matched",
+      "date": "matched",
+      "environment": "matched",
+      "region": "matched",
+      "method": "matched"
+     },
+     "superseded": false,
+     "retention": "expired",
+     "limitations": []
+    }
+   ],
+   "expression": null,
+   "expect": {
+    "status": "insufficient",
+    "support_strength": "E0",
+    "refutation_strength": "E0",
+    "gate": [],
+    "policy": {
+     "feed": [
+      "allow",
+      "attributed_unverified"
+     ],
+     "detail": [
+      "allow",
+      "attributed_unverified"
+     ],
+     "title": [
+      "allow",
+      "attributed_unverified"
+     ],
+     "overview": [
+      "hold",
+      null
+     ],
+     "digest": [
+      "allow",
+      "attributed_unverified"
+     ],
+     "search": [
+      "allow",
+      "attributed_unverified"
+     ],
+     "export": [
+      "allow",
+      "attributed_unverified"
+     ]
+    },
+    "must_not_show": [
+     "scoped_fact"
+    ]
+   },
+   "pair": null
+  },
+  {
+   "id": "AC33-01",
+   "category": "truncated_quote",
+   "ac": [
+    "AC33"
+   ],
+   "title": "只引用“测试版可用”，省略“正式版不支持”",
+   "claim": {
+    "statement": "Plugin X 2.0 已支持离线使用。",
+    "claim_kind": "factual_assertion",
+    "aspect": "compatibility",
+    "importance": "medium",
+    "verifiability": "verifiable",
+    "qualifiers": {
+     "product_version": "2.0"
+    }
+   },
+   "materials": [],
+   "expression": {
+    "text": "该功能只在测试版可用，正式版不支持离线。",
+    "quote": "该功能只在测试版可用",
+    "expect": {
+     "schema": "claim_extract.v1",
+     "result": "candidate",
+     "reason": "CONTEXT_TRUNCATED_LIMITATION"
+    }
+   },
+   "expect": {
+    "status": "insufficient",
+    "support_strength": "E0",
+    "refutation_strength": "E0",
+    "gate": [],
+    "policy": {
+     "feed": [
+      "allow",
+      "attributed_unverified"
+     ],
+     "detail": [
+      "allow",
+      "attributed_unverified"
+     ],
+     "title": [
+      "allow",
+      "attributed_unverified"
+     ],
+     "overview": [
+      "hold",
+      null
+     ],
+     "digest": [
+      "allow",
+      "attributed_unverified"
+     ],
+     "search": [
+      "allow",
+      "attributed_unverified"
+     ],
+     "export": [
+      "allow",
+      "attributed_unverified"
+     ]
+    },
+    "must_not_show": [
+     "scoped_fact"
+    ]
+   },
+   "pair": null
+  },
+  {
+   "id": "AC33-02",
+   "category": "truncated_quote",
+   "ac": [
+    "AC33"
+   ],
+   "title": "引用 beta 通道说明，省略“稳定版尚未开放”",
+   "claim": {
+    "statement": "Plugin X 2.0 已支持离线使用。",
+    "claim_kind": "factual_assertion",
+    "aspect": "compatibility",
+    "importance": "medium",
+    "verifiability": "verifiable",
+    "qualifiers": {
+     "product_version": "2.0"
+    }
+   },
+   "materials": [],
+   "expression": {
+    "text": "离线模式仅在 beta 通道提供，稳定版尚未开放。",
+    "quote": "离线模式仅在 beta 通道提供",
+    "expect": {
+     "schema": "claim_extract.v1",
+     "result": "candidate",
+     "reason": "CONTEXT_TRUNCATED_LIMITATION"
+    }
+   },
+   "expect": {
+    "status": "insufficient",
+    "support_strength": "E0",
+    "refutation_strength": "E0",
+    "gate": [],
+    "policy": {
+     "feed": [
+      "allow",
+      "attributed_unverified"
+     ],
+     "detail": [
+      "allow",
+      "attributed_unverified"
+     ],
+     "title": [
+      "allow",
+      "attributed_unverified"
+     ],
+     "overview": [
+      "hold",
+      null
+     ],
+     "digest": [
+      "allow",
+      "attributed_unverified"
+     ],
+     "search": [
+      "allow",
+      "attributed_unverified"
+     ],
+     "export": [
+      "allow",
+      "attributed_unverified"
+     ]
+    },
+    "must_not_show": [
+     "scoped_fact"
+    ]
+   },
+   "pair": null
+  },
+  {
+   "id": "AC33-03",
+   "category": "truncated_quote",
+   "ac": [
+    "AC33"
+   ],
+   "title": "引用 Windows 支持，省略“macOS 尚未发布”",
+   "claim": {
+    "statement": "Plugin X 2.0 支持所有桌面系统。",
+    "claim_kind": "factual_assertion",
+    "aspect": "compatibility",
+    "importance": "medium",
+    "verifiability": "verifiable",
+    "qualifiers": {
+     "product_version": "2.0"
+    }
+   },
+   "materials": [],
+   "expression": {
+    "text": "官方文档写明支持 Windows，但 macOS 版本尚未发布。",
+    "quote": "官方文档写明支持 Windows",
+    "expect": {
+     "schema": "claim_extract.v1",
+     "result": "candidate",
+     "reason": "CONTEXT_TRUNCATED_LIMITATION"
+    }
+   },
+   "expect": {
+    "status": "insufficient",
+    "support_strength": "E0",
+    "refutation_strength": "E0",
+    "gate": [],
+    "policy": {
+     "feed": [
+      "allow",
+      "attributed_unverified"
+     ],
+     "detail": [
+      "allow",
+      "attributed_unverified"
+     ],
+     "title": [
+      "allow",
+      "attributed_unverified"
+     ],
+     "overview": [
+      "hold",
+      null
+     ],
+     "digest": [
+      "allow",
+      "attributed_unverified"
+     ],
+     "search": [
+      "allow",
+      "attributed_unverified"
+     ],
+     "export": [
+      "allow",
+      "attributed_unverified"
+     ]
+    },
+    "must_not_show": [
+     "scoped_fact"
+    ]
+   },
+   "pair": null
+  },
+  {
+   "id": "AC33-04",
+   "category": "truncated_quote",
+   "ac": [
+    "AC33"
+   ],
+   "title": "完整句子可以正常锚定",
+   "claim": {
+    "statement": "Plugin X 2.0 支持 Windows 与 macOS。",
+    "claim_kind": "factual_assertion",
+    "aspect": "compatibility",
+    "importance": "medium",
+    "verifiability": "verifiable",
+    "qualifiers": {
+     "product_version": "2.0"
+    }
+   },
+   "materials": [],
+   "expression": {
+    "text": "该版本支持 Windows 与 macOS。",
+    "quote": "支持 Windows 与 macOS",
+    "expect": {
+     "schema": "claim_extract.v1",
+     "result": "accepted"
+    }
+   },
+   "expect": {
+    "status": "insufficient",
+    "support_strength": "E0",
+    "refutation_strength": "E0",
+    "gate": [],
+    "policy": {
+     "feed": [
+      "allow",
+      "attributed_unverified"
+     ],
+     "detail": [
+      "allow",
+      "attributed_unverified"
+     ],
+     "title": [
+      "allow",
+      "attributed_unverified"
+     ],
+     "overview": [
+      "hold",
+      null
+     ],
+     "digest": [
+      "allow",
+      "attributed_unverified"
+     ],
+     "search": [
+      "allow",
+      "attributed_unverified"
+     ],
+     "export": [
+      "allow",
+      "attributed_unverified"
+     ]
+    },
+    "must_not_show": []
+   },
+   "pair": null
+  },
+  {
+   "id": "AC33-05",
+   "category": "truncated_quote",
+   "ac": [
+    "AC33"
+   ],
+   "title": "并列补充句不触发截断规则",
+   "claim": {
+    "statement": "导出功能已上线。",
+    "claim_kind": "factual_assertion",
+    "aspect": "compatibility",
+    "importance": "medium",
+    "verifiability": "verifiable",
+    "qualifiers": {
+     "product_version": "2.0"
+    }
+   },
+   "materials": [],
+   "expression": {
+    "text": "导出功能已上线，用户反馈良好。",
+    "quote": "导出功能已上线",
+    "expect": {
+     "schema": "claim_extract.v1",
+     "result": "accepted"
+    }
+   },
+   "expect": {
+    "status": "insufficient",
+    "support_strength": "E0",
+    "refutation_strength": "E0",
+    "gate": [],
+    "policy": {
+     "feed": [
+      "allow",
+      "attributed_unverified"
+     ],
+     "detail": [
+      "allow",
+      "attributed_unverified"
+     ],
+     "title": [
+      "allow",
+      "attributed_unverified"
+     ],
+     "overview": [
+      "hold",
+      null
+     ],
+     "digest": [
+      "allow",
+      "attributed_unverified"
+     ],
+     "search": [
+      "allow",
+      "attributed_unverified"
+     ],
+     "export": [
+      "allow",
+      "attributed_unverified"
+     ]
+    },
+    "must_not_show": []
+   },
+   "pair": null
+  },
+  {
+   "id": "AC33-06",
+   "category": "truncated_quote",
+   "ac": [
+    "AC33"
+   ],
+   "title": "“但是仅限于 20 个文件”被省略",
+   "claim": {
+    "statement": "Plugin X 2.0 支持无限批量导入。",
+    "claim_kind": "factual_assertion",
+    "aspect": "compatibility",
+    "importance": "medium",
+    "verifiability": "verifiable",
+    "qualifiers": {
+     "product_version": "2.0"
+    }
+   },
+   "materials": [],
+   "expression": {
+    "text": "新版本增加了批量导入，但是仅限于 20 个文件。",
+    "quote": "新版本增加了批量导入",
+    "expect": {
+     "schema": "claim_extract.v1",
+     "result": "candidate",
+     "reason": "CONTEXT_TRUNCATED_LIMITATION"
+    }
+   },
+   "expect": {
+    "status": "insufficient",
+    "support_strength": "E0",
+    "refutation_strength": "E0",
+    "gate": [],
+    "policy": {
+     "feed": [
+      "allow",
+      "attributed_unverified"
+     ],
+     "detail": [
+      "allow",
+      "attributed_unverified"
+     ],
+     "title": [
+      "allow",
+      "attributed_unverified"
+     ],
+     "overview": [
+      "hold",
+      null
+     ],
+     "digest": [
+      "allow",
+      "attributed_unverified"
+     ],
+     "search": [
+      "allow",
+      "attributed_unverified"
+     ],
+     "export": [
+      "allow",
+      "attributed_unverified"
+     ]
+    },
+    "must_not_show": [
+     "scoped_fact"
+    ]
+   },
+   "pair": null
+  },
+  {
+   "id": "AC33-07",
+   "category": "truncated_quote",
+   "ac": [
+    "AC33"
+   ],
+   "title": "“不支持云端同步”被省略",
+   "claim": {
+    "statement": "Plugin X 2.0 支持离线与云端同步。",
+    "claim_kind": "factual_assertion",
+    "aspect": "compatibility",
+    "importance": "medium",
+    "verifiability": "verifiable",
+    "qualifiers": {
+     "product_version": "2.0"
+    }
+   },
+   "materials": [],
+   "expression": {
+    "text": "该插件可在离线环境运行，不支持云端同步。",
+    "quote": "该插件可在离线环境运行",
+    "expect": {
+     "schema": "claim_extract.v1",
+     "result": "candidate",
+     "reason": "CONTEXT_TRUNCATED_LIMITATION"
+    }
+   },
+   "expect": {
+    "status": "insufficient",
+    "support_strength": "E0",
+    "refutation_strength": "E0",
+    "gate": [],
+    "policy": {
+     "feed": [
+      "allow",
+      "attributed_unverified"
+     ],
+     "detail": [
+      "allow",
+      "attributed_unverified"
+     ],
+     "title": [
+      "allow",
+      "attributed_unverified"
+     ],
+     "overview": [
+      "hold",
+      null
+     ],
+     "digest": [
+      "allow",
+      "attributed_unverified"
+     ],
+     "search": [
+      "allow",
+      "attributed_unverified"
+     ],
+     "export": [
+      "allow",
+      "attributed_unverified"
+     ]
+    },
+    "must_not_show": [
+     "scoped_fact"
+    ]
+   },
+   "pair": null
+  },
+  {
+   "id": "AC33-08",
+   "category": "truncated_quote",
+   "ac": [
+    "AC33"
+   ],
+   "title": "“并且支持云端同步”是并列而非限定",
+   "claim": {
+    "statement": "Plugin X 2.0 支持离线与云端同步。",
+    "claim_kind": "factual_assertion",
+    "aspect": "compatibility",
+    "importance": "medium",
+    "verifiability": "verifiable",
+    "qualifiers": {
+     "product_version": "2.0"
+    }
+   },
+   "materials": [],
+   "expression": {
+    "text": "该插件可在离线环境运行，并且支持云端同步。",
+    "quote": "该插件可在离线环境运行",
+    "expect": {
+     "schema": "claim_extract.v1",
+     "result": "accepted"
+    }
+   },
+   "expect": {
+    "status": "insufficient",
+    "support_strength": "E0",
+    "refutation_strength": "E0",
+    "gate": [],
+    "policy": {
+     "feed": [
+      "allow",
+      "attributed_unverified"
+     ],
+     "detail": [
+      "allow",
+      "attributed_unverified"
+     ],
+     "title": [
+      "allow",
+      "attributed_unverified"
+     ],
+     "overview": [
+      "hold",
+      null
+     ],
+     "digest": [
+      "allow",
+      "attributed_unverified"
+     ],
+     "search": [
+      "allow",
+      "attributed_unverified"
+     ],
+     "export": [
+      "allow",
+      "attributed_unverified"
+     ]
+    },
+    "must_not_show": []
+   },
+   "pair": null
+  },
+  {
+   "id": "AC34-01",
+   "category": "expired_version",
+   "ac": [
+    "AC34"
+   ],
+   "title": "唯一的支持材料来自已被新版本取代的来源",
+   "claim": {
+    "statement": "Plugin X 2.0 当前仍支持离线索引。",
+    "claim_kind": "factual_assertion",
+    "aspect": "compatibility",
+    "importance": "medium",
+    "verifiability": "verifiable",
+    "qualifiers": {
+     "product_version": "2.0"
+    }
+   },
+   "materials": [
+    {
+     "role": "support",
+     "directness": "direct",
+     "artifact_integrity": "verified",
+     "independence_status": "unknown",
+     "origin_group_id": "G1",
+     "applicability": {
+      "product_version": "matched",
+      "date": "matched",
+      "environment": "matched",
+      "region": "matched",
+      "method": "matched"
+     },
+     "superseded": true,
+     "retention": "ok",
+     "limitations": []
+    }
+   ],
+   "expression": null,
+   "expect": {
+    "status": "insufficient",
+    "support_strength": "E1",
+    "refutation_strength": "E0",
+    "gate": [],
+    "policy": {
+     "feed": [
+      "allow",
+      "attributed_unverified"
+     ],
+     "detail": [
+      "allow",
+      "attributed_unverified"
+     ],
+     "title": [
+      "allow",
+      "attributed_unverified"
+     ],
+     "overview": [
+      "hold",
+      null
+     ],
+     "digest": [
+      "allow",
+      "attributed_unverified"
+     ],
+     "search": [
+      "allow",
+      "attributed_unverified"
+     ],
+     "export": [
+      "allow",
+      "attributed_unverified"
+     ]
+    },
+    "must_not_show": [
+     "scoped_fact"
+    ]
+   },
+   "pair": null
+  },
+  {
+   "id": "AC34-02",
+   "category": "expired_version",
+   "ac": [
+    "AC34",
+    "AC35"
+   ],
+   "title": "两个过期版本不能拼成 E3",
+   "claim": {
+    "statement": "Plugin X 2.0 当前仍支持离线索引。",
+    "claim_kind": "factual_assertion",
+    "aspect": "compatibility",
+    "importance": "high",
+    "verifiability": "verifiable",
+    "qualifiers": {
+     "product_version": "2.0"
+    }
+   },
+   "materials": [
+    {
+     "role": "support",
+     "directness": "direct",
+     "artifact_integrity": "verified",
+     "independence_status": "confirmed",
+     "origin_group_id": "G1",
+     "applicability": {
+      "product_version": "matched",
+      "date": "matched",
+      "environment": "matched",
+      "region": "matched",
+      "method": "matched"
+     },
+     "superseded": true,
+     "retention": "ok",
+     "limitations": []
+    },
+    {
+     "role": "support",
+     "directness": "direct",
+     "artifact_integrity": "verified",
+     "independence_status": "confirmed",
+     "origin_group_id": "G2",
+     "applicability": {
+      "product_version": "matched",
+      "date": "matched",
+      "environment": "matched",
+      "region": "matched",
+      "method": "matched"
+     },
+     "superseded": true,
+     "retention": "ok",
+     "limitations": []
+    }
+   ],
+   "expression": null,
+   "expect": {
+    "status": "insufficient",
+    "support_strength": "E1",
+    "refutation_strength": "E0",
+    "gate": [],
+    "policy": {
+     "feed": [
+      "hold",
+      null
+     ],
+     "detail": [
+      "hold",
+      null
+     ],
+     "title": [
+      "hold",
+      null
+     ],
+     "overview": [
+      "hold",
+      null
+     ],
+     "digest": [
+      "hold",
+      null
+     ],
+     "search": [
+      "hold",
+      null
+     ],
+     "export": [
+      "hold",
+      null
+     ]
+    },
+    "must_not_show": [
+     "scoped_fact",
+     "attributed_unverified"
+    ]
+   },
+   "pair": null
+  },
+  {
+   "id": "AC34-03",
+   "category": "expired_version",
+   "ac": [
+    "AC34"
+   ],
+   "title": "当前版本材料与过期材料混合，只能按当前版本一个上游组计",
+   "claim": {
+    "statement": "Plugin X 2.0 当前仍支持离线索引。",
+    "claim_kind": "factual_assertion",
+    "aspect": "compatibility",
+    "importance": "high",
+    "verifiability": "verifiable",
+    "qualifiers": {
+     "product_version": "2.0"
+    }
+   },
+   "materials": [
+    {
+     "role": "support",
+     "directness": "direct",
+     "artifact_integrity": "verified",
+     "independence_status": "confirmed",
+     "origin_group_id": "G1",
+     "applicability": {
+      "product_version": "matched",
+      "date": "matched",
+      "environment": "matched",
+      "region": "matched",
+      "method": "matched"
+     },
+     "superseded": false,
+     "retention": "ok",
+     "limitations": []
+    },
+    {
+     "role": "support",
+     "directness": "direct",
+     "artifact_integrity": "verified",
+     "independence_status": "confirmed",
+     "origin_group_id": "G2",
+     "applicability": {
+      "product_version": "matched",
+      "date": "matched",
+      "environment": "matched",
+      "region": "matched",
+      "method": "matched"
+     },
+     "superseded": true,
+     "retention": "ok",
+     "limitations": []
+    }
+   ],
+   "expression": null,
+   "expect": {
+    "status": "corroborated",
+    "support_strength": "E2",
+    "refutation_strength": "E0",
+    "gate": [
+     "IMPORTANT_FACT_REQUIRES_E3"
+    ],
+    "policy": {
+     "feed": [
+      "hold",
+      null
+     ],
+     "detail": [
+      "hold",
+      null
+     ],
+     "title": [
+      "hold",
+      null
+     ],
+     "overview": [
+      "hold",
+      null
+     ],
+     "digest": [
+      "hold",
+      null
+     ],
+     "search": [
+      "hold",
+      null
+     ],
+     "export": [
+      "hold",
+      null
+     ]
+    },
+    "must_not_show": [
+     "scoped_fact"
+    ]
+   },
+   "pair": null
+  },
+  {
+   "id": "AC34-04",
+   "category": "expired_version",
+   "ac": [
+    "AC34"
+   ],
+   "title": "两个当前版本独立组可确认重要事实",
+   "claim": {
+    "statement": "Plugin X 2.0 当前仍支持离线索引。",
+    "claim_kind": "factual_assertion",
+    "aspect": "compatibility",
+    "importance": "high",
+    "verifiability": "verifiable",
+    "qualifiers": {
+     "product_version": "2.0"
+    }
+   },
+   "materials": [
+    {
+     "role": "support",
+     "directness": "direct",
+     "artifact_integrity": "verified",
+     "independence_status": "confirmed",
+     "origin_group_id": "G1",
+     "applicability": {
+      "product_version": "matched",
+      "date": "matched",
+      "environment": "matched",
+      "region": "matched",
+      "method": "matched"
+     },
+     "superseded": false,
+     "retention": "ok",
+     "limitations": []
+    },
+    {
+     "role": "support",
+     "directness": "direct",
+     "artifact_integrity": "verified",
+     "independence_status": "confirmed",
+     "origin_group_id": "G2",
+     "applicability": {
+      "product_version": "matched",
+      "date": "matched",
+      "environment": "matched",
+      "region": "matched",
+      "method": "matched"
+     },
+     "superseded": false,
+     "retention": "ok",
+     "limitations": []
+    }
+   ],
+   "expression": null,
+   "expect": {
+    "status": "corroborated",
+    "support_strength": "E3",
+    "refutation_strength": "E0",
+    "gate": [],
+    "policy": {
+     "feed": [
+      "allow",
+      "scoped_fact"
+     ],
+     "detail": [
+      "allow",
+      "scoped_fact"
+     ],
+     "title": [
+      "allow",
+      "scoped_fact"
+     ],
+     "overview": [
+      "allow",
+      "scoped_fact"
+     ],
+     "digest": [
+      "allow",
+      "scoped_fact"
+     ],
+     "search": [
+      "allow",
+      "scoped_fact"
+     ],
+     "export": [
+      "allow",
+      "scoped_fact"
+     ]
+    },
+    "must_not_show": []
+   },
+   "pair": null
+  },
+  {
+   "id": "AC34-05",
+   "category": "expired_version",
+   "ac": [
+    "AC34",
+    "AC42"
+   ],
+   "title": "当前版本的强反证可以推翻旧结论",
+   "claim": {
+    "statement": "Plugin X 2.0 当前仍支持离线索引。",
+    "claim_kind": "factual_assertion",
+    "aspect": "compatibility",
+    "importance": "medium",
+    "verifiability": "verifiable",
+    "qualifiers": {
+     "product_version": "2.0"
+    }
+   },
+   "materials": [
+    {
+     "role": "refute",
+     "directness": "direct",
+     "artifact_integrity": "verified",
+     "independence_status": "confirmed",
+     "origin_group_id": "G1",
+     "applicability": {
+      "product_version": "matched",
+      "date": "matched",
+      "environment": "matched",
+      "region": "matched",
+      "method": "matched"
+     },
+     "superseded": false,
+     "retention": "ok",
+     "limitations": []
+    },
+    {
+     "role": "refute",
+     "directness": "direct",
+     "artifact_integrity": "verified",
+     "independence_status": "confirmed",
+     "origin_group_id": "G2",
+     "applicability": {
+      "product_version": "matched",
+      "date": "matched",
+      "environment": "matched",
+      "region": "matched",
+      "method": "matched"
+     },
+     "superseded": false,
+     "retention": "ok",
+     "limitations": []
+    }
+   ],
+   "expression": null,
+   "expect": {
+    "status": "refuted",
+    "support_strength": "E0",
+    "refutation_strength": "E3",
+    "gate": [],
+    "policy": {
+     "feed": [
+      "hold",
+      null
+     ],
+     "detail": [
+      "hold",
+      null
+     ],
+     "title": [
+      "hold",
+      null
+     ],
+     "overview": [
+      "hold",
+      null
+     ],
+     "digest": [
+      "hold",
+      null
+     ],
+     "search": [
+      "hold",
+      null
+     ],
+     "export": [
+      "hold",
+      null
+     ]
+    },
+    "must_not_show": [
+     "scoped_fact",
+     "attributed_unverified"
+    ]
+   },
+   "pair": null
+  },
+  {
+   "id": "AC34-06",
+   "category": "expired_version",
+   "ac": [
+    "AC34"
+   ],
+   "title": "保留期到期的支持材料不可用",
+   "claim": {
+    "statement": "Plugin X 2.0 当前仍支持离线索引。",
+    "claim_kind": "factual_assertion",
+    "aspect": "compatibility",
+    "importance": "medium",
+    "verifiability": "verifiable",
+    "qualifiers": {
+     "product_version": "2.0"
+    }
+   },
+   "materials": [
+    {
+     "role": "support",
+     "directness": "direct",
+     "artifact_integrity": "verified",
+     "independence_status": "unknown",
+     "origin_group_id": "G1",
+     "applicability": {
+      "product_version": "matched",
+      "date": "matched",
+      "environment": "matched",
+      "region": "matched",
+      "method": "matched"
+     },
+     "superseded": false,
+     "retention": "expired",
+     "limitations": []
+    }
+   ],
+   "expression": null,
+   "expect": {
+    "status": "insufficient",
+    "support_strength": "E0",
+    "refutation_strength": "E0",
+    "gate": [],
+    "policy": {
+     "feed": [
+      "allow",
+      "attributed_unverified"
+     ],
+     "detail": [
+      "allow",
+      "attributed_unverified"
+     ],
+     "title": [
+      "allow",
+      "attributed_unverified"
+     ],
+     "overview": [
+      "hold",
+      null
+     ],
+     "digest": [
+      "allow",
+      "attributed_unverified"
+     ],
+     "search": [
+      "allow",
+      "attributed_unverified"
+     ],
+     "export": [
+      "allow",
+      "attributed_unverified"
+     ]
+    },
+    "must_not_show": [
+     "scoped_fact"
+    ]
+   },
+   "pair": null
+  },
+  {
+   "id": "AC34-07",
+   "category": "expired_version",
+   "ac": [
+    "AC34"
+   ],
+   "title": "过期反向材料仍作为未解决反证，不能直接确认",
+   "claim": {
+    "statement": "Plugin X 2.0 当前仍支持离线索引。",
+    "claim_kind": "factual_assertion",
+    "aspect": "compatibility",
+    "importance": "medium",
+    "verifiability": "verifiable",
+    "qualifiers": {
+     "product_version": "2.0"
+    }
+   },
+   "materials": [
+    {
+     "role": "support",
+     "directness": "direct",
+     "artifact_integrity": "verified",
+     "independence_status": "unknown",
+     "origin_group_id": "G1",
+     "applicability": {
+      "product_version": "matched",
+      "date": "matched",
+      "environment": "matched",
+      "region": "matched",
+      "method": "matched"
+     },
+     "superseded": false,
+     "retention": "ok",
+     "limitations": []
+    },
+    {
+     "role": "refute",
+     "directness": "direct",
+     "artifact_integrity": "verified",
+     "independence_status": "unknown",
+     "origin_group_id": "G1",
+     "applicability": {
+      "product_version": "matched",
+      "date": "matched",
+      "environment": "matched",
+      "region": "matched",
+      "method": "matched"
+     },
+     "superseded": true,
+     "retention": "ok",
+     "limitations": []
+    }
+   ],
+   "expression": null,
+   "expect": {
+    "status": "conflicted",
+    "support_strength": "E2",
+    "refutation_strength": "E1",
+    "gate": [],
+    "policy": {
+     "feed": [
+      "hold",
+      null
+     ],
+     "detail": [
+      "hold",
+      null
+     ],
+     "title": [
+      "hold",
+      null
+     ],
+     "overview": [
+      "hold",
+      null
+     ],
+     "digest": [
+      "hold",
+      null
+     ],
+     "search": [
+      "hold",
+      null
+     ],
+     "export": [
+      "hold",
+      null
+     ]
+    },
+    "must_not_show": [
+     "scoped_fact"
+    ]
+   },
+   "pair": null
+  },
+  {
+   "id": "AC34-08",
+   "category": "expired_version",
+   "ac": [
+    "AC34"
+   ],
+   "title": "全部材料过期时状态必须为未核实",
+   "claim": {
+    "statement": "Plugin X 2.0 当前仍支持离线索引。",
+    "claim_kind": "factual_assertion",
+    "aspect": "compatibility",
+    "importance": "high",
+    "verifiability": "verifiable",
+    "qualifiers": {
+     "product_version": "2.0"
+    }
+   },
+   "materials": [
+    {
+     "role": "support",
+     "directness": "direct",
+     "artifact_integrity": "verified",
+     "independence_status": "unknown",
+     "origin_group_id": "G1",
+     "applicability": {
+      "product_version": "matched",
+      "date": "matched",
+      "environment": "matched",
+      "region": "matched",
+      "method": "matched"
+     },
+     "superseded": true,
+     "retention": "ok",
+     "limitations": []
+    },
+    {
+     "role": "support",
+     "directness": "direct",
+     "artifact_integrity": "verified",
+     "independence_status": "unknown",
+     "origin_group_id": "G2",
+     "applicability": {
+      "product_version": "matched",
+      "date": "matched",
+      "environment": "matched",
+      "region": "matched",
+      "method": "matched"
+     },
+     "superseded": true,
+     "retention": "ok",
+     "limitations": []
+    }
+   ],
+   "expression": null,
+   "expect": {
+    "status": "insufficient",
+    "support_strength": "E1",
+    "refutation_strength": "E0",
+    "gate": [],
+    "policy": {
+     "feed": [
+      "hold",
+      null
+     ],
+     "detail": [
+      "hold",
+      null
+     ],
+     "title": [
+      "hold",
+      null
+     ],
+     "overview": [
+      "hold",
+      null
+     ],
+     "digest": [
+      "hold",
+      null
+     ],
+     "search": [
+      "hold",
+      null
+     ],
+     "export": [
+      "hold",
+      null
+     ]
+    },
+    "must_not_show": [
+     "scoped_fact"
+    ]
+   },
+   "pair": null
+  },
+  {
+   "id": "AC35-01",
+   "category": "circular_repost",
+   "ac": [
+    "AC35"
+   ],
+   "title": "十个来源互相转述同一公告",
+   "claim": {
+    "statement": "Plugin X 2.0 已发布。",
+    "claim_kind": "factual_assertion",
+    "aspect": "compatibility",
+    "importance": "medium",
+    "verifiability": "verifiable",
+    "qualifiers": {
+     "product_version": "2.0"
+    }
+   },
+   "materials": [
+    {
+     "role": "support",
+     "directness": "direct",
+     "artifact_integrity": "verified",
+     "independence_status": "shared_origin",
+     "origin_group_id": "G1",
+     "applicability": {
+      "product_version": "matched",
+      "date": "matched",
+      "environment": "matched",
+      "region": "matched",
+      "method": "matched"
+     },
+     "superseded": false,
+     "retention": "ok",
+     "limitations": []
+    },
+    {
+     "role": "support",
+     "directness": "direct",
+     "artifact_integrity": "verified",
+     "independence_status": "shared_origin",
+     "origin_group_id": "G1",
+     "applicability": {
+      "product_version": "matched",
+      "date": "matched",
+      "environment": "matched",
+      "region": "matched",
+      "method": "matched"
+     },
+     "superseded": false,
+     "retention": "ok",
+     "limitations": []
+    },
+    {
+     "role": "support",
+     "directness": "direct",
+     "artifact_integrity": "verified",
+     "independence_status": "shared_origin",
+     "origin_group_id": "G1",
+     "applicability": {
+      "product_version": "matched",
+      "date": "matched",
+      "environment": "matched",
+      "region": "matched",
+      "method": "matched"
+     },
+     "superseded": false,
+     "retention": "ok",
+     "limitations": []
+    },
+    {
+     "role": "support",
+     "directness": "direct",
+     "artifact_integrity": "verified",
+     "independence_status": "shared_origin",
+     "origin_group_id": "G1",
+     "applicability": {
+      "product_version": "matched",
+      "date": "matched",
+      "environment": "matched",
+      "region": "matched",
+      "method": "matched"
+     },
+     "superseded": false,
+     "retention": "ok",
+     "limitations": []
+    },
+    {
+     "role": "support",
+     "directness": "direct",
+     "artifact_integrity": "verified",
+     "independence_status": "shared_origin",
+     "origin_group_id": "G1",
+     "applicability": {
+      "product_version": "matched",
+      "date": "matched",
+      "environment": "matched",
+      "region": "matched",
+      "method": "matched"
+     },
+     "superseded": false,
+     "retention": "ok",
+     "limitations": []
+    },
+    {
+     "role": "support",
+     "directness": "direct",
+     "artifact_integrity": "verified",
+     "independence_status": "shared_origin",
+     "origin_group_id": "G1",
+     "applicability": {
+      "product_version": "matched",
+      "date": "matched",
+      "environment": "matched",
+      "region": "matched",
+      "method": "matched"
+     },
+     "superseded": false,
+     "retention": "ok",
+     "limitations": []
+    },
+    {
+     "role": "support",
+     "directness": "direct",
+     "artifact_integrity": "verified",
+     "independence_status": "shared_origin",
+     "origin_group_id": "G1",
+     "applicability": {
+      "product_version": "matched",
+      "date": "matched",
+      "environment": "matched",
+      "region": "matched",
+      "method": "matched"
+     },
+     "superseded": false,
+     "retention": "ok",
+     "limitations": []
+    },
+    {
+     "role": "support",
+     "directness": "direct",
+     "artifact_integrity": "verified",
+     "independence_status": "shared_origin",
+     "origin_group_id": "G1",
+     "applicability": {
+      "product_version": "matched",
+      "date": "matched",
+      "environment": "matched",
+      "region": "matched",
+      "method": "matched"
+     },
+     "superseded": false,
+     "retention": "ok",
+     "limitations": []
+    },
+    {
+     "role": "support",
+     "directness": "direct",
+     "artifact_integrity": "verified",
+     "independence_status": "shared_origin",
+     "origin_group_id": "G1",
+     "applicability": {
+      "product_version": "matched",
+      "date": "matched",
+      "environment": "matched",
+      "region": "matched",
+      "method": "matched"
+     },
+     "superseded": false,
+     "retention": "ok",
+     "limitations": []
+    },
+    {
+     "role": "support",
+     "directness": "direct",
+     "artifact_integrity": "verified",
+     "independence_status": "shared_origin",
+     "origin_group_id": "G1",
+     "applicability": {
+      "product_version": "matched",
+      "date": "matched",
+      "environment": "matched",
+      "region": "matched",
+      "method": "matched"
+     },
+     "superseded": false,
+     "retention": "ok",
+     "limitations": []
+    }
+   ],
+   "expression": null,
+   "expect": {
+    "status": "corroborated",
+    "support_strength": "E2",
+    "refutation_strength": "E0",
+    "gate": [],
+    "policy": {
+     "feed": [
+      "allow",
+      "scoped_fact"
+     ],
+     "detail": [
+      "allow",
+      "scoped_fact"
+     ],
+     "title": [
+      "allow",
+      "scoped_fact"
+     ],
+     "overview": [
+      "allow",
+      "scoped_fact"
+     ],
+     "digest": [
+      "allow",
+      "scoped_fact"
+     ],
+     "search": [
+      "allow",
+      "scoped_fact"
+     ],
+     "export": [
+      "allow",
+      "scoped_fact"
+     ]
+    },
+    "must_not_show": []
+   },
+   "pair": null
+  },
+  {
+   "id": "AC35-02",
+   "category": "circular_repost",
+   "ac": [
+    "AC35"
+   ],
+   "title": "同一上游组即使标注确认独立也不能升级",
+   "claim": {
+    "statement": "Plugin X 2.0 已发布。",
+    "claim_kind": "factual_assertion",
+    "aspect": "compatibility",
+    "importance": "medium",
+    "verifiability": "verifiable",
+    "qualifiers": {
+     "product_version": "2.0"
+    }
+   },
+   "materials": [
+    {
+     "role": "support",
+     "directness": "direct",
+     "artifact_integrity": "verified",
+     "independence_status": "confirmed",
+     "origin_group_id": "G1",
+     "applicability": {
+      "product_version": "matched",
+      "date": "matched",
+      "environment": "matched",
+      "region": "matched",
+      "method": "matched"
+     },
+     "superseded": false,
+     "retention": "ok",
+     "limitations": []
+    },
+    {
+     "role": "support",
+     "directness": "direct",
+     "artifact_integrity": "verified",
+     "independence_status": "confirmed",
+     "origin_group_id": "G1",
+     "applicability": {
+      "product_version": "matched",
+      "date": "matched",
+      "environment": "matched",
+      "region": "matched",
+      "method": "matched"
+     },
+     "superseded": false,
+     "retention": "ok",
+     "limitations": []
+    }
+   ],
+   "expression": null,
+   "expect": {
+    "status": "corroborated",
+    "support_strength": "E2",
+    "refutation_strength": "E0",
+    "gate": [],
+    "policy": {
+     "feed": [
+      "allow",
+      "scoped_fact"
+     ],
+     "detail": [
+      "allow",
+      "scoped_fact"
+     ],
+     "title": [
+      "allow",
+      "scoped_fact"
+     ],
+     "overview": [
+      "allow",
+      "scoped_fact"
+     ],
+     "digest": [
+      "allow",
+      "scoped_fact"
+     ],
+     "search": [
+      "allow",
+      "scoped_fact"
+     ],
+     "export": [
+      "allow",
+      "scoped_fact"
+     ]
+    },
+    "must_not_show": []
+   },
+   "pair": null
+  },
+  {
+   "id": "AC35-03",
+   "category": "circular_repost",
+   "ac": [
+    "AC35"
+   ],
+   "title": "三个上游组但独立性全部未知",
+   "claim": {
+    "statement": "Plugin X 2.0 已发布。",
+    "claim_kind": "factual_assertion",
+    "aspect": "compatibility",
+    "importance": "high",
+    "verifiability": "verifiable",
+    "qualifiers": {
+     "product_version": "2.0"
+    }
+   },
+   "materials": [
+    {
+     "role": "support",
+     "directness": "direct",
+     "artifact_integrity": "verified",
+     "independence_status": "unknown",
+     "origin_group_id": "G1",
+     "applicability": {
+      "product_version": "matched",
+      "date": "matched",
+      "environment": "matched",
+      "region": "matched",
+      "method": "matched"
+     },
+     "superseded": false,
+     "retention": "ok",
+     "limitations": []
+    },
+    {
+     "role": "support",
+     "directness": "direct",
+     "artifact_integrity": "verified",
+     "independence_status": "unknown",
+     "origin_group_id": "G2",
+     "applicability": {
+      "product_version": "matched",
+      "date": "matched",
+      "environment": "matched",
+      "region": "matched",
+      "method": "matched"
+     },
+     "superseded": false,
+     "retention": "ok",
+     "limitations": []
+    },
+    {
+     "role": "support",
+     "directness": "direct",
+     "artifact_integrity": "verified",
+     "independence_status": "unknown",
+     "origin_group_id": "G3",
+     "applicability": {
+      "product_version": "matched",
+      "date": "matched",
+      "environment": "matched",
+      "region": "matched",
+      "method": "matched"
+     },
+     "superseded": false,
+     "retention": "ok",
+     "limitations": []
+    }
+   ],
+   "expression": null,
+   "expect": {
+    "status": "corroborated",
+    "support_strength": "E2",
+    "refutation_strength": "E0",
+    "gate": [
+     "IMPORTANT_FACT_REQUIRES_E3"
+    ],
+    "policy": {
+     "feed": [
+      "hold",
+      null
+     ],
+     "detail": [
+      "hold",
+      null
+     ],
+     "title": [
+      "hold",
+      null
+     ],
+     "overview": [
+      "hold",
+      null
+     ],
+     "digest": [
+      "hold",
+      null
+     ],
+     "search": [
+      "hold",
+      null
+     ],
+     "export": [
+      "hold",
+      null
+     ]
+    },
+    "must_not_show": [
+     "scoped_fact"
+    ]
+   },
+   "pair": null
+  },
+  {
+   "id": "AC35-04",
+   "category": "circular_repost",
+   "ac": [
+    "AC35"
+   ],
+   "title": "两个上游组，仅一组确认独立，达到 E3 的最低条件",
+   "claim": {
+    "statement": "Plugin X 2.0 已发布。",
+    "claim_kind": "factual_assertion",
+    "aspect": "compatibility",
+    "importance": "medium",
+    "verifiability": "verifiable",
+    "qualifiers": {
+     "product_version": "2.0"
+    }
+   },
+   "materials": [
+    {
+     "role": "support",
+     "directness": "direct",
+     "artifact_integrity": "verified",
+     "independence_status": "confirmed",
+     "origin_group_id": "G1",
+     "applicability": {
+      "product_version": "matched",
+      "date": "matched",
+      "environment": "matched",
+      "region": "matched",
+      "method": "matched"
+     },
+     "superseded": false,
+     "retention": "ok",
+     "limitations": []
+    },
+    {
+     "role": "support",
+     "directness": "direct",
+     "artifact_integrity": "verified",
+     "independence_status": "unknown",
+     "origin_group_id": "G2",
+     "applicability": {
+      "product_version": "matched",
+      "date": "matched",
+      "environment": "matched",
+      "region": "matched",
+      "method": "matched"
+     },
+     "superseded": false,
+     "retention": "ok",
+     "limitations": []
+    }
+   ],
+   "expression": null,
+   "expect": {
+    "status": "corroborated",
+    "support_strength": "E3",
+    "refutation_strength": "E0",
+    "gate": [],
+    "policy": {
+     "feed": [
+      "allow",
+      "scoped_fact"
+     ],
+     "detail": [
+      "allow",
+      "scoped_fact"
+     ],
+     "title": [
+      "allow",
+      "scoped_fact"
+     ],
+     "overview": [
+      "allow",
+      "scoped_fact"
+     ],
+     "digest": [
+      "allow",
+      "scoped_fact"
+     ],
+     "search": [
+      "allow",
+      "scoped_fact"
+     ],
+     "export": [
+      "allow",
+      "scoped_fact"
+     ]
+    },
+    "must_not_show": []
+   },
+   "pair": null
+  },
+  {
+   "id": "AC35-05",
+   "category": "circular_repost",
+   "ac": [
+    "AC35"
+   ],
+   "title": "十个来源、两个独立组才可升级",
+   "claim": {
+    "statement": "Plugin X 2.0 已发布。",
+    "claim_kind": "factual_assertion",
+    "aspect": "compatibility",
+    "importance": "high",
+    "verifiability": "verifiable",
+    "qualifiers": {
+     "product_version": "2.0"
+    }
+   },
+   "materials": [
+    {
+     "role": "support",
+     "directness": "direct",
+     "artifact_integrity": "verified",
+     "independence_status": "confirmed",
+     "origin_group_id": "G1",
+     "applicability": {
+      "product_version": "matched",
+      "date": "matched",
+      "environment": "matched",
+      "region": "matched",
+      "method": "matched"
+     },
+     "superseded": false,
+     "retention": "ok",
+     "limitations": []
+    },
+    {
+     "role": "support",
+     "directness": "direct",
+     "artifact_integrity": "verified",
+     "independence_status": "confirmed",
+     "origin_group_id": "G2",
+     "applicability": {
+      "product_version": "matched",
+      "date": "matched",
+      "environment": "matched",
+      "region": "matched",
+      "method": "matched"
+     },
+     "superseded": false,
+     "retention": "ok",
+     "limitations": []
+    },
+    {
+     "role": "support",
+     "directness": "direct",
+     "artifact_integrity": "verified",
+     "independence_status": "shared_origin",
+     "origin_group_id": "G1",
+     "applicability": {
+      "product_version": "matched",
+      "date": "matched",
+      "environment": "matched",
+      "region": "matched",
+      "method": "matched"
+     },
+     "superseded": false,
+     "retention": "ok",
+     "limitations": []
+    },
+    {
+     "role": "support",
+     "directness": "direct",
+     "artifact_integrity": "verified",
+     "independence_status": "shared_origin",
+     "origin_group_id": "G1",
+     "applicability": {
+      "product_version": "matched",
+      "date": "matched",
+      "environment": "matched",
+      "region": "matched",
+      "method": "matched"
+     },
+     "superseded": false,
+     "retention": "ok",
+     "limitations": []
+    },
+    {
+     "role": "support",
+     "directness": "direct",
+     "artifact_integrity": "verified",
+     "independence_status": "shared_origin",
+     "origin_group_id": "G1",
+     "applicability": {
+      "product_version": "matched",
+      "date": "matched",
+      "environment": "matched",
+      "region": "matched",
+      "method": "matched"
+     },
+     "superseded": false,
+     "retention": "ok",
+     "limitations": []
+    },
+    {
+     "role": "support",
+     "directness": "direct",
+     "artifact_integrity": "verified",
+     "independence_status": "shared_origin",
+     "origin_group_id": "G1",
+     "applicability": {
+      "product_version": "matched",
+      "date": "matched",
+      "environment": "matched",
+      "region": "matched",
+      "method": "matched"
+     },
+     "superseded": false,
+     "retention": "ok",
+     "limitations": []
+    },
+    {
+     "role": "support",
+     "directness": "direct",
+     "artifact_integrity": "verified",
+     "independence_status": "shared_origin",
+     "origin_group_id": "G1",
+     "applicability": {
+      "product_version": "matched",
+      "date": "matched",
+      "environment": "matched",
+      "region": "matched",
+      "method": "matched"
+     },
+     "superseded": false,
+     "retention": "ok",
+     "limitations": []
+    },
+    {
+     "role": "support",
+     "directness": "direct",
+     "artifact_integrity": "verified",
+     "independence_status": "shared_origin",
+     "origin_group_id": "G1",
+     "applicability": {
+      "product_version": "matched",
+      "date": "matched",
+      "environment": "matched",
+      "region": "matched",
+      "method": "matched"
+     },
+     "superseded": false,
+     "retention": "ok",
+     "limitations": []
+    },
+    {
+     "role": "support",
+     "directness": "direct",
+     "artifact_integrity": "verified",
+     "independence_status": "shared_origin",
+     "origin_group_id": "G1",
+     "applicability": {
+      "product_version": "matched",
+      "date": "matched",
+      "environment": "matched",
+      "region": "matched",
+      "method": "matched"
+     },
+     "superseded": false,
+     "retention": "ok",
+     "limitations": []
+    },
+    {
+     "role": "support",
+     "directness": "direct",
+     "artifact_integrity": "verified",
+     "independence_status": "shared_origin",
+     "origin_group_id": "G1",
+     "applicability": {
+      "product_version": "matched",
+      "date": "matched",
+      "environment": "matched",
+      "region": "matched",
+      "method": "matched"
+     },
+     "superseded": false,
+     "retention": "ok",
+     "limitations": []
+    }
+   ],
+   "expression": null,
+   "expect": {
+    "status": "corroborated",
+    "support_strength": "E3",
+    "refutation_strength": "E0",
+    "gate": [],
+    "policy": {
+     "feed": [
+      "allow",
+      "scoped_fact"
+     ],
+     "detail": [
+      "allow",
+      "scoped_fact"
+     ],
+     "title": [
+      "allow",
+      "scoped_fact"
+     ],
+     "overview": [
+      "allow",
+      "scoped_fact"
+     ],
+     "digest": [
+      "allow",
+      "scoped_fact"
+     ],
+     "search": [
+      "allow",
+      "scoped_fact"
+     ],
+     "export": [
+      "allow",
+      "scoped_fact"
+     ]
+    },
+    "must_not_show": []
+   },
+   "pair": null
+  },
+  {
+   "id": "AC35-06",
+   "category": "circular_repost",
+   "ac": [
+    "AC35"
+   ],
+   "title": "同源转载数量不改变间接材料的档位",
+   "claim": {
+    "statement": "Plugin X 2.0 已发布。",
+    "claim_kind": "factual_assertion",
+    "aspect": "compatibility",
+    "importance": "medium",
+    "verifiability": "verifiable",
+    "qualifiers": {
+     "product_version": "2.0"
+    }
+   },
+   "materials": [
+    {
+     "role": "support",
+     "directness": "indirect",
+     "artifact_integrity": "verified",
+     "independence_status": "unknown",
+     "origin_group_id": "G1",
+     "applicability": {
+      "product_version": "matched",
+      "date": "matched",
+      "environment": "matched",
+      "region": "matched",
+      "method": "matched"
+     },
+     "superseded": false,
+     "retention": "ok",
+     "limitations": []
+    },
+    {
+     "role": "support",
+     "directness": "indirect",
+     "artifact_integrity": "verified",
+     "independence_status": "unknown",
+     "origin_group_id": "G1",
+     "applicability": {
+      "product_version": "matched",
+      "date": "matched",
+      "environment": "matched",
+      "region": "matched",
+      "method": "matched"
+     },
+     "superseded": false,
+     "retention": "ok",
+     "limitations": []
+    },
+    {
+     "role": "support",
+     "directness": "indirect",
+     "artifact_integrity": "verified",
+     "independence_status": "unknown",
+     "origin_group_id": "G1",
+     "applicability": {
+      "product_version": "matched",
+      "date": "matched",
+      "environment": "matched",
+      "region": "matched",
+      "method": "matched"
+     },
+     "superseded": false,
+     "retention": "ok",
+     "limitations": []
+    },
+    {
+     "role": "support",
+     "directness": "indirect",
+     "artifact_integrity": "verified",
+     "independence_status": "unknown",
+     "origin_group_id": "G1",
+     "applicability": {
+      "product_version": "matched",
+      "date": "matched",
+      "environment": "matched",
+      "region": "matched",
+      "method": "matched"
+     },
+     "superseded": false,
+     "retention": "ok",
+     "limitations": []
+    },
+    {
+     "role": "support",
+     "directness": "indirect",
+     "artifact_integrity": "verified",
+     "independence_status": "unknown",
+     "origin_group_id": "G1",
+     "applicability": {
+      "product_version": "matched",
+      "date": "matched",
+      "environment": "matched",
+      "region": "matched",
+      "method": "matched"
+     },
+     "superseded": false,
+     "retention": "ok",
+     "limitations": []
+    },
+    {
+     "role": "support",
+     "directness": "indirect",
+     "artifact_integrity": "verified",
+     "independence_status": "unknown",
+     "origin_group_id": "G1",
+     "applicability": {
+      "product_version": "matched",
+      "date": "matched",
+      "environment": "matched",
+      "region": "matched",
+      "method": "matched"
+     },
+     "superseded": false,
+     "retention": "ok",
+     "limitations": []
+    },
+    {
+     "role": "support",
+     "directness": "indirect",
+     "artifact_integrity": "verified",
+     "independence_status": "unknown",
+     "origin_group_id": "G1",
+     "applicability": {
+      "product_version": "matched",
+      "date": "matched",
+      "environment": "matched",
+      "region": "matched",
+      "method": "matched"
+     },
+     "superseded": false,
+     "retention": "ok",
+     "limitations": []
+    },
+    {
+     "role": "support",
+     "directness": "indirect",
+     "artifact_integrity": "verified",
+     "independence_status": "unknown",
+     "origin_group_id": "G1",
+     "applicability": {
+      "product_version": "matched",
+      "date": "matched",
+      "environment": "matched",
+      "region": "matched",
+      "method": "matched"
+     },
+     "superseded": false,
+     "retention": "ok",
+     "limitations": []
+    },
+    {
+     "role": "support",
+     "directness": "indirect",
+     "artifact_integrity": "verified",
+     "independence_status": "unknown",
+     "origin_group_id": "G1",
+     "applicability": {
+      "product_version": "matched",
+      "date": "matched",
+      "environment": "matched",
+      "region": "matched",
+      "method": "matched"
+     },
+     "superseded": false,
+     "retention": "ok",
+     "limitations": []
+    },
+    {
+     "role": "support",
+     "directness": "indirect",
+     "artifact_integrity": "verified",
+     "independence_status": "unknown",
+     "origin_group_id": "G1",
+     "applicability": {
+      "product_version": "matched",
+      "date": "matched",
+      "environment": "matched",
+      "region": "matched",
+      "method": "matched"
+     },
+     "superseded": false,
+     "retention": "ok",
+     "limitations": []
+    }
+   ],
+   "expression": null,
+   "expect": {
+    "status": "insufficient",
+    "support_strength": "E1",
+    "refutation_strength": "E0",
+    "gate": [],
+    "policy": {
+     "feed": [
+      "allow",
+      "attributed_unverified"
+     ],
+     "detail": [
+      "allow",
+      "attributed_unverified"
+     ],
+     "title": [
+      "allow",
+      "attributed_unverified"
+     ],
+     "overview": [
+      "hold",
+      null
+     ],
+     "digest": [
+      "allow",
+      "attributed_unverified"
+     ],
+     "search": [
+      "allow",
+      "attributed_unverified"
+     ],
+     "export": [
+      "allow",
+      "attributed_unverified"
+     ]
+    },
+    "must_not_show": [
+     "scoped_fact"
+    ]
+   },
+   "pair": null
+  },
+  {
+   "id": "AC35-07",
+   "category": "circular_repost",
+   "ac": [
+    "AC35"
+   ],
+   "title": "同一来源版本重复登记仍是同一上游",
+   "claim": {
+    "statement": "Plugin X 2.0 已发布。",
+    "claim_kind": "factual_assertion",
+    "aspect": "compatibility",
+    "importance": "high",
+    "verifiability": "verifiable",
+    "qualifiers": {
+     "product_version": "2.0"
+    }
+   },
+   "materials": [
+    {
+     "role": "support",
+     "directness": "direct",
+     "artifact_integrity": "verified",
+     "independence_status": "unknown",
+     "origin_group_id": "G1",
+     "applicability": {
+      "product_version": "matched",
+      "date": "matched",
+      "environment": "matched",
+      "region": "matched",
+      "method": "matched"
+     },
+     "superseded": false,
+     "retention": "ok",
+     "limitations": []
+    },
+    {
+     "role": "support",
+     "directness": "direct",
+     "artifact_integrity": "verified",
+     "independence_status": "unknown",
+     "origin_group_id": "G1",
+     "applicability": {
+      "product_version": "matched",
+      "date": "matched",
+      "environment": "matched",
+      "region": "matched",
+      "method": "matched"
+     },
+     "superseded": false,
+     "retention": "ok",
+     "limitations": []
+    },
+    {
+     "role": "support",
+     "directness": "direct",
+     "artifact_integrity": "verified",
+     "independence_status": "unknown",
+     "origin_group_id": "G1",
+     "applicability": {
+      "product_version": "matched",
+      "date": "matched",
+      "environment": "matched",
+      "region": "matched",
+      "method": "matched"
+     },
+     "superseded": false,
+     "retention": "ok",
+     "limitations": []
+    }
+   ],
+   "expression": null,
+   "expect": {
+    "status": "corroborated",
+    "support_strength": "E2",
+    "refutation_strength": "E0",
+    "gate": [
+     "IMPORTANT_FACT_REQUIRES_E3"
+    ],
+    "policy": {
+     "feed": [
+      "hold",
+      null
+     ],
+     "detail": [
+      "hold",
+      null
+     ],
+     "title": [
+      "hold",
+      null
+     ],
+     "overview": [
+      "hold",
+      null
+     ],
+     "digest": [
+      "hold",
+      null
+     ],
+     "search": [
+      "hold",
+      null
+     ],
+     "export": [
+      "hold",
+      null
+     ]
+    },
+    "must_not_show": []
+   },
+   "pair": null
+  },
+  {
+   "id": "AC35-08",
+   "category": "circular_repost",
+   "ac": [
+    "AC35",
+    "AC40"
+   ],
+   "title": "多来源一致说法不替代事实证据",
+   "claim": {
+    "statement": "Plugin X 2.0 已发布。",
+    "claim_kind": "factual_assertion",
+    "aspect": "compatibility",
+    "importance": "medium",
+    "verifiability": "verifiable",
+    "qualifiers": {
+     "product_version": "2.0"
+    }
+   },
+   "materials": [
+    {
+     "role": "support",
+     "directness": "indirect",
+     "artifact_integrity": "verified",
+     "independence_status": "unknown",
+     "origin_group_id": "G1",
+     "applicability": {
+      "product_version": "matched",
+      "date": "matched",
+      "environment": "matched",
+      "region": "matched",
+      "method": "matched"
+     },
+     "superseded": false,
+     "retention": "ok",
+     "limitations": []
+    },
+    {
+     "role": "support",
+     "directness": "indirect",
+     "artifact_integrity": "verified",
+     "independence_status": "unknown",
+     "origin_group_id": "G2",
+     "applicability": {
+      "product_version": "matched",
+      "date": "matched",
+      "environment": "matched",
+      "region": "matched",
+      "method": "matched"
+     },
+     "superseded": false,
+     "retention": "ok",
+     "limitations": []
+    },
+    {
+     "role": "support",
+     "directness": "indirect",
+     "artifact_integrity": "verified",
+     "independence_status": "unknown",
+     "origin_group_id": "G3",
+     "applicability": {
+      "product_version": "matched",
+      "date": "matched",
+      "environment": "matched",
+      "region": "matched",
+      "method": "matched"
+     },
+     "superseded": false,
+     "retention": "ok",
+     "limitations": []
+    },
+    {
+     "role": "support",
+     "directness": "indirect",
+     "artifact_integrity": "verified",
+     "independence_status": "unknown",
+     "origin_group_id": "G4",
+     "applicability": {
+      "product_version": "matched",
+      "date": "matched",
+      "environment": "matched",
+      "region": "matched",
+      "method": "matched"
+     },
+     "superseded": false,
+     "retention": "ok",
+     "limitations": []
+    },
+    {
+     "role": "support",
+     "directness": "indirect",
+     "artifact_integrity": "verified",
+     "independence_status": "unknown",
+     "origin_group_id": "G5",
+     "applicability": {
+      "product_version": "matched",
+      "date": "matched",
+      "environment": "matched",
+      "region": "matched",
+      "method": "matched"
+     },
+     "superseded": false,
+     "retention": "ok",
+     "limitations": []
+    },
+    {
+     "role": "support",
+     "directness": "indirect",
+     "artifact_integrity": "verified",
+     "independence_status": "unknown",
+     "origin_group_id": "G6",
+     "applicability": {
+      "product_version": "matched",
+      "date": "matched",
+      "environment": "matched",
+      "region": "matched",
+      "method": "matched"
+     },
+     "superseded": false,
+     "retention": "ok",
+     "limitations": []
+    },
+    {
+     "role": "support",
+     "directness": "indirect",
+     "artifact_integrity": "verified",
+     "independence_status": "unknown",
+     "origin_group_id": "G7",
+     "applicability": {
+      "product_version": "matched",
+      "date": "matched",
+      "environment": "matched",
+      "region": "matched",
+      "method": "matched"
+     },
+     "superseded": false,
+     "retention": "ok",
+     "limitations": []
+    },
+    {
+     "role": "support",
+     "directness": "indirect",
+     "artifact_integrity": "verified",
+     "independence_status": "unknown",
+     "origin_group_id": "G8",
+     "applicability": {
+      "product_version": "matched",
+      "date": "matched",
+      "environment": "matched",
+      "region": "matched",
+      "method": "matched"
+     },
+     "superseded": false,
+     "retention": "ok",
+     "limitations": []
+    }
+   ],
+   "expression": null,
+   "expect": {
+    "status": "insufficient",
+    "support_strength": "E1",
+    "refutation_strength": "E0",
+    "gate": [],
+    "policy": {
+     "feed": [
+      "allow",
+      "attributed_unverified"
+     ],
+     "detail": [
+      "allow",
+      "attributed_unverified"
+     ],
+     "title": [
+      "allow",
+      "attributed_unverified"
+     ],
+     "overview": [
+      "hold",
+      null
+     ],
+     "digest": [
+      "allow",
+      "attributed_unverified"
+     ],
+     "search": [
+      "allow",
+      "attributed_unverified"
+     ],
+     "export": [
+      "allow",
+      "attributed_unverified"
+     ]
+    },
+    "must_not_show": [
+     "scoped_fact"
+    ]
+   },
+   "pair": null
+  },
+  {
+   "id": "AC36-01",
+   "category": "forged_review",
+   "ac": [
+    "AC36"
+   ],
+   "title": "仅截图且疑似拼接",
+   "claim": {
+    "statement": "Plugin X 2.0 性能提升三倍。",
+    "claim_kind": "factual_assertion",
+    "aspect": "compatibility",
+    "importance": "high",
+    "verifiability": "verifiable",
+    "qualifiers": {
+     "product_version": "2.0"
+    }
+   },
+   "materials": [
+    {
+     "role": "support",
+     "directness": "direct",
+     "artifact_integrity": "suspected_manipulation",
+     "independence_status": "unknown",
+     "origin_group_id": "G1",
+     "applicability": {
+      "product_version": "matched",
+      "date": "matched",
+      "environment": "matched",
+      "region": "matched",
+      "method": "matched"
+     },
+     "superseded": false,
+     "retention": "ok",
+     "limitations": []
+    }
+   ],
+   "expression": null,
+   "expect": {
+    "status": "insufficient",
+    "support_strength": "E0",
+    "refutation_strength": "E0",
+    "gate": [],
+    "policy": {
+     "feed": [
+      "hold",
+      null
+     ],
+     "detail": [
+      "hold",
+      null
+     ],
+     "title": [
+      "hold",
+      null
+     ],
+     "overview": [
+      "hold",
+      null
+     ],
+     "digest": [
+      "hold",
+      null
+     ],
+     "search": [
+      "hold",
+      null
+     ],
+     "export": [
+      "hold",
+      null
+     ]
+    },
+    "must_not_show": [
+     "scoped_fact"
+    ]
+   },
+   "pair": null
+  },
+  {
+   "id": "AC36-02",
+   "category": "forged_review",
+   "ac": [
+    "AC36"
+   ],
+   "title": "无原始数据的高分表无法核验完整性",
+   "claim": {
+    "statement": "Plugin X 2.0 性能提升三倍。",
+    "claim_kind": "factual_assertion",
+    "aspect": "compatibility",
+    "importance": "high",
+    "verifiability": "verifiable",
+    "qualifiers": {
+     "product_version": "2.0"
+    }
+   },
+   "materials": [
+    {
+     "role": "support",
+     "directness": "direct",
+     "artifact_integrity": "unverified",
+     "independence_status": "unknown",
+     "origin_group_id": "G1",
+     "applicability": {
+      "product_version": "matched",
+      "date": "matched",
+      "environment": "matched",
+      "region": "matched",
+      "method": "matched"
+     },
+     "superseded": false,
+     "retention": "ok",
+     "limitations": []
+    }
+   ],
+   "expression": null,
+   "expect": {
+    "status": "insufficient",
+    "support_strength": "E1",
+    "refutation_strength": "E0",
+    "gate": [],
+    "policy": {
+     "feed": [
+      "hold",
+      null
+     ],
+     "detail": [
+      "hold",
+      null
+     ],
+     "title": [
+      "hold",
+      null
+     ],
+     "overview": [
+      "hold",
+      null
+     ],
+     "digest": [
+      "hold",
+      null
+     ],
+     "search": [
+      "hold",
+      null
+     ],
+     "export": [
+      "hold",
+      null
+     ]
+    },
+    "must_not_show": [
+     "scoped_fact"
+    ]
+   },
+   "pair": null
+  },
+  {
+   "id": "AC36-03",
+   "category": "forged_review",
+   "ac": [
+    "AC36"
+   ],
+   "title": "截图转述属于间接材料",
+   "claim": {
+    "statement": "Plugin X 2.0 性能提升三倍。",
+    "claim_kind": "factual_assertion",
+    "aspect": "compatibility",
+    "importance": "medium",
+    "verifiability": "verifiable",
+    "qualifiers": {
+     "product_version": "2.0"
+    }
+   },
+   "materials": [
+    {
+     "role": "support",
+     "directness": "indirect",
+     "artifact_integrity": "unverified",
+     "independence_status": "unknown",
+     "origin_group_id": "G1",
+     "applicability": {
+      "product_version": "matched",
+      "date": "matched",
+      "environment": "matched",
+      "region": "matched",
+      "method": "matched"
+     },
+     "superseded": false,
+     "retention": "ok",
+     "limitations": []
+    }
+   ],
+   "expression": null,
+   "expect": {
+    "status": "insufficient",
+    "support_strength": "E1",
+    "refutation_strength": "E0",
+    "gate": [],
+    "policy": {
+     "feed": [
+      "allow",
+      "attributed_unverified"
+     ],
+     "detail": [
+      "allow",
+      "attributed_unverified"
+     ],
+     "title": [
+      "allow",
+      "attributed_unverified"
+     ],
+     "overview": [
+      "hold",
+      null
+     ],
+     "digest": [
+      "allow",
+      "attributed_unverified"
+     ],
+     "search": [
+      "allow",
+      "attributed_unverified"
+     ],
+     "export": [
+      "allow",
+      "attributed_unverified"
+     ]
+    },
+    "must_not_show": [
+     "scoped_fact"
+    ]
+   },
+   "pair": null
+  },
+  {
+   "id": "AC36-04",
+   "category": "forged_review",
+   "ac": [
+    "AC36"
+   ],
+   "title": "两条未核验材料仍不能确认",
+   "claim": {
+    "statement": "Plugin X 2.0 性能提升三倍。",
+    "claim_kind": "factual_assertion",
+    "aspect": "compatibility",
+    "importance": "high",
+    "verifiability": "verifiable",
+    "qualifiers": {
+     "product_version": "2.0"
+    }
+   },
+   "materials": [
+    {
+     "role": "support",
+     "directness": "direct",
+     "artifact_integrity": "unverified",
+     "independence_status": "unknown",
+     "origin_group_id": "G1",
+     "applicability": {
+      "product_version": "matched",
+      "date": "matched",
+      "environment": "matched",
+      "region": "matched",
+      "method": "matched"
+     },
+     "superseded": false,
+     "retention": "ok",
+     "limitations": []
+    },
+    {
+     "role": "support",
+     "directness": "direct",
+     "artifact_integrity": "unverified",
+     "independence_status": "unknown",
+     "origin_group_id": "G2",
+     "applicability": {
+      "product_version": "matched",
+      "date": "matched",
+      "environment": "matched",
+      "region": "matched",
+      "method": "matched"
+     },
+     "superseded": false,
+     "retention": "ok",
+     "limitations": []
+    }
+   ],
+   "expression": null,
+   "expect": {
+    "status": "insufficient",
+    "support_strength": "E1",
+    "refutation_strength": "E0",
+    "gate": [],
+    "policy": {
+     "feed": [
+      "hold",
+      null
+     ],
+     "detail": [
+      "hold",
+      null
+     ],
+     "title": [
+      "hold",
+      null
+     ],
+     "overview": [
+      "hold",
+      null
+     ],
+     "digest": [
+      "hold",
+      null
+     ],
+     "search": [
+      "hold",
+      null
+     ],
+     "export": [
+      "hold",
+      null
+     ]
+    },
+    "must_not_show": [
+     "scoped_fact"
+    ]
+   },
+   "pair": null
+  },
+  {
+   "id": "AC36-05",
+   "category": "forged_review",
+   "ac": [
+    "AC36"
+   ],
+   "title": "一条疑似材料不否定另一条可核验材料",
+   "claim": {
+    "statement": "Plugin X 2.0 性能提升三倍。",
+    "claim_kind": "factual_assertion",
+    "aspect": "compatibility",
+    "importance": "medium",
+    "verifiability": "verifiable",
+    "qualifiers": {
+     "product_version": "2.0"
+    }
+   },
+   "materials": [
+    {
+     "role": "support",
+     "directness": "direct",
+     "artifact_integrity": "verified",
+     "independence_status": "unknown",
+     "origin_group_id": "G1",
+     "applicability": {
+      "product_version": "matched",
+      "date": "matched",
+      "environment": "matched",
+      "region": "matched",
+      "method": "matched"
+     },
+     "superseded": false,
+     "retention": "ok",
+     "limitations": []
+    },
+    {
+     "role": "support",
+     "directness": "direct",
+     "artifact_integrity": "suspected_manipulation",
+     "independence_status": "unknown",
+     "origin_group_id": "G2",
+     "applicability": {
+      "product_version": "matched",
+      "date": "matched",
+      "environment": "matched",
+      "region": "matched",
+      "method": "matched"
+     },
+     "superseded": false,
+     "retention": "ok",
+     "limitations": []
+    }
+   ],
+   "expression": null,
+   "expect": {
+    "status": "corroborated",
+    "support_strength": "E2",
+    "refutation_strength": "E0",
+    "gate": [],
+    "policy": {
+     "feed": [
+      "allow",
+      "scoped_fact"
+     ],
+     "detail": [
+      "allow",
+      "scoped_fact"
+     ],
+     "title": [
+      "allow",
+      "scoped_fact"
+     ],
+     "overview": [
+      "allow",
+      "scoped_fact"
+     ],
+     "digest": [
+      "allow",
+      "scoped_fact"
+     ],
+     "search": [
+      "allow",
+      "scoped_fact"
+     ],
+     "export": [
+      "allow",
+      "scoped_fact"
+     ]
+    },
+    "must_not_show": []
+   },
+   "pair": null
+  },
+  {
+   "id": "AC36-06",
+   "category": "forged_review",
+   "ac": [
+    "AC36",
+    "AC41"
+   ],
+   "title": "可核验支持与未核验反证形成争议",
+   "claim": {
+    "statement": "Plugin X 2.0 性能提升三倍。",
+    "claim_kind": "factual_assertion",
+    "aspect": "compatibility",
+    "importance": "medium",
+    "verifiability": "verifiable",
+    "qualifiers": {
+     "product_version": "2.0"
+    }
+   },
+   "materials": [
+    {
+     "role": "support",
+     "directness": "direct",
+     "artifact_integrity": "verified",
+     "independence_status": "unknown",
+     "origin_group_id": "G1",
+     "applicability": {
+      "product_version": "matched",
+      "date": "matched",
+      "environment": "matched",
+      "region": "matched",
+      "method": "matched"
+     },
+     "superseded": false,
+     "retention": "ok",
+     "limitations": []
+    },
+    {
+     "role": "refute",
+     "directness": "direct",
+     "artifact_integrity": "unverified",
+     "independence_status": "unknown",
+     "origin_group_id": "G1",
+     "applicability": {
+      "product_version": "matched",
+      "date": "matched",
+      "environment": "matched",
+      "region": "matched",
+      "method": "matched"
+     },
+     "superseded": false,
+     "retention": "ok",
+     "limitations": []
+    }
+   ],
+   "expression": null,
+   "expect": {
+    "status": "conflicted",
+    "support_strength": "E2",
+    "refutation_strength": "E1",
+    "gate": [],
+    "policy": {
+     "feed": [
+      "hold",
+      null
+     ],
+     "detail": [
+      "hold",
+      null
+     ],
+     "title": [
+      "hold",
+      null
+     ],
+     "overview": [
+      "hold",
+      null
+     ],
+     "digest": [
+      "hold",
+      null
+     ],
+     "search": [
+      "hold",
+      null
+     ],
+     "export": [
+      "hold",
+      null
+     ]
+    },
+    "must_not_show": [
+     "scoped_fact"
+    ]
+   },
+   "pair": null
+  },
+  {
+   "id": "AC36-07",
+   "category": "forged_review",
+   "ac": [
+    "AC36"
+   ],
+   "title": "矛盾日志不构成强反证",
+   "claim": {
+    "statement": "Plugin X 2.0 性能提升三倍。",
+    "claim_kind": "factual_assertion",
+    "aspect": "compatibility",
+    "importance": "medium",
+    "verifiability": "verifiable",
+    "qualifiers": {
+     "product_version": "2.0"
+    }
+   },
+   "materials": [
+    {
+     "role": "refute",
+     "directness": "indirect",
+     "artifact_integrity": "unverified",
+     "independence_status": "unknown",
+     "origin_group_id": "G1",
+     "applicability": {
+      "product_version": "matched",
+      "date": "matched",
+      "environment": "matched",
+      "region": "matched",
+      "method": "matched"
+     },
+     "superseded": false,
+     "retention": "ok",
+     "limitations": []
+    }
+   ],
+   "expression": null,
+   "expect": {
+    "status": "insufficient",
+    "support_strength": "E0",
+    "refutation_strength": "E1",
+    "gate": [],
+    "policy": {
+     "feed": [
+      "allow",
+      "attributed_unverified"
+     ],
+     "detail": [
+      "allow",
+      "attributed_unverified"
+     ],
+     "title": [
+      "allow",
+      "attributed_unverified"
+     ],
+     "overview": [
+      "hold",
+      null
+     ],
+     "digest": [
+      "allow",
+      "attributed_unverified"
+     ],
+     "search": [
+      "allow",
+      "attributed_unverified"
+     ],
+     "export": [
+      "allow",
+      "attributed_unverified"
+     ]
+    },
+    "must_not_show": [
+     "scoped_fact",
+     "refuted"
+    ]
+   },
+   "pair": null
+  },
+  {
+   "id": "AC36-08",
+   "category": "forged_review",
+   "ac": [
+    "AC36"
+   ],
+   "title": "无法确定伪造时只能标未核实，不能指控造假",
+   "claim": {
+    "statement": "Plugin X 2.0 性能提升三倍。",
+    "claim_kind": "factual_assertion",
+    "aspect": "compatibility",
+    "importance": "high",
+    "verifiability": "verifiable",
+    "qualifiers": {
+     "product_version": "2.0"
+    }
+   },
+   "materials": [
+    {
+     "role": "support",
+     "directness": "indirect",
+     "artifact_integrity": "unverified",
+     "independence_status": "unknown",
+     "origin_group_id": "G1",
+     "applicability": {
+      "product_version": "matched",
+      "date": "matched",
+      "environment": "matched",
+      "region": "matched",
+      "method": "matched"
+     },
+     "superseded": false,
+     "retention": "ok",
+     "limitations": [
+      "无法判断截图来源"
+     ]
+    }
+   ],
+   "expression": null,
+   "expect": {
+    "status": "insufficient",
+    "support_strength": "E1",
+    "refutation_strength": "E0",
+    "gate": [],
+    "policy": {
+     "feed": [
+      "hold",
+      null
+     ],
+     "detail": [
+      "hold",
+      null
+     ],
+     "title": [
+      "hold",
+      null
+     ],
+     "overview": [
+      "hold",
+      null
+     ],
+     "digest": [
+      "hold",
+      null
+     ],
+     "search": [
+      "hold",
+      null
+     ],
+     "export": [
+      "hold",
+      null
+     ]
+    },
+    "must_not_show": [
+     "scoped_fact",
+     "refuted"
+    ]
+   },
+   "pair": null
+  },
+  {
+   "id": "AC37-01",
+   "category": "mixed_criticism",
+   "ac": [
+    "AC37"
+   ],
+   "title": "真实限制：批量导入上限 20 个文件",
+   "claim": {
+    "statement": "Plugin X 2.0 批量导入每次最多 20 个文件。",
+    "claim_kind": "factual_assertion",
+    "aspect": "compatibility",
+    "importance": "medium",
+    "verifiability": "verifiable",
+    "qualifiers": {
+     "product_version": "2.0"
+    }
+   },
+   "materials": [
+    {
+     "role": "support",
+     "directness": "direct",
+     "artifact_integrity": "verified",
+     "independence_status": "unknown",
+     "origin_group_id": "G1",
+     "applicability": {
+      "product_version": "matched",
+      "date": "matched",
+      "environment": "matched",
+      "region": "matched",
+      "method": "matched"
+     },
+     "superseded": false,
+     "retention": "ok",
+     "limitations": [
+      "仅限 20 个文件"
+     ]
+    }
+   ],
+   "expression": null,
+   "expect": {
+    "status": "corroborated",
+    "support_strength": "E2",
+    "refutation_strength": "E0",
+    "gate": [],
+    "policy": {
+     "feed": [
+      "allow",
+      "scoped_fact"
+     ],
+     "detail": [
+      "allow",
+      "scoped_fact"
+     ],
+     "title": [
+      "allow",
+      "scoped_fact"
+     ],
+     "overview": [
+      "allow",
+      "scoped_fact"
+     ],
+     "digest": [
+      "allow",
+      "scoped_fact"
+     ],
+     "search": [
+      "allow",
+      "scoped_fact"
+     ],
+     "export": [
+      "allow",
+      "scoped_fact"
+     ]
+    },
+    "must_not_show": []
+   },
+   "pair": "CRIT-1"
+  },
+  {
+   "id": "AC37-02",
+   "category": "mixed_criticism",
+   "ac": [
+    "AC37"
+   ],
+   "title": "真实限制：离线模式仍需首次登录",
+   "claim": {
+    "statement": "Plugin X 2.0 离线模式需要首次登录。",
+    "claim_kind": "factual_assertion",
+    "aspect": "compatibility",
+    "importance": "medium",
+    "verifiability": "verifiable",
+    "qualifiers": {
+     "product_version": "2.0"
+    }
+   },
+   "materials": [
+    {
+     "role": "support",
+     "directness": "direct",
+     "artifact_integrity": "verified",
+     "independence_status": "unknown",
+     "origin_group_id": "G1",
+     "applicability": {
+      "product_version": "matched",
+      "date": "matched",
+      "environment": "matched",
+      "region": "matched",
+      "method": "matched"
+     },
+     "superseded": false,
+     "retention": "ok",
+     "limitations": []
+    }
+   ],
+   "expression": null,
+   "expect": {
+    "status": "corroborated",
+    "support_strength": "E2",
+    "refutation_strength": "E0",
+    "gate": [],
+    "policy": {
+     "feed": [
+      "allow",
+      "scoped_fact"
+     ],
+     "detail": [
+      "allow",
+      "scoped_fact"
+     ],
+     "title": [
+      "allow",
+      "scoped_fact"
+     ],
+     "overview": [
+      "allow",
+      "scoped_fact"
+     ],
+     "digest": [
+      "allow",
+      "scoped_fact"
+     ],
+     "search": [
+      "allow",
+      "scoped_fact"
+     ],
+     "export": [
+      "allow",
+      "scoped_fact"
+     ]
+    },
+    "must_not_show": []
+   },
+   "pair": "CRIT-2"
+  },
+  {
+   "id": "AC37-03",
+   "category": "mixed_criticism",
+   "ac": [
+    "AC37"
+   ],
+   "title": "真实限制：不支持 Linux",
+   "claim": {
+    "statement": "Plugin X 2.0 不支持 Linux。",
+    "claim_kind": "factual_assertion",
+    "aspect": "compatibility",
+    "importance": "medium",
+    "verifiability": "verifiable",
+    "qualifiers": {
+     "product_version": "2.0"
+    }
+   },
+   "materials": [
+    {
+     "role": "support",
+     "directness": "direct",
+     "artifact_integrity": "verified",
+     "independence_status": "unknown",
+     "origin_group_id": "G1",
+     "applicability": {
+      "product_version": "matched",
+      "date": "matched",
+      "environment": "matched",
+      "region": "matched",
+      "method": "matched"
+     },
+     "superseded": false,
+     "retention": "ok",
+     "limitations": []
+    }
+   ],
+   "expression": null,
+   "expect": {
+    "status": "corroborated",
+    "support_strength": "E2",
+    "refutation_strength": "E0",
+    "gate": [],
+    "policy": {
+     "feed": [
+      "allow",
+      "scoped_fact"
+     ],
+     "detail": [
+      "allow",
+      "scoped_fact"
+     ],
+     "title": [
+      "allow",
+      "scoped_fact"
+     ],
+     "overview": [
+      "allow",
+      "scoped_fact"
+     ],
+     "digest": [
+      "allow",
+      "scoped_fact"
+     ],
+     "search": [
+      "allow",
+      "scoped_fact"
+     ],
+     "export": [
+      "allow",
+      "scoped_fact"
+     ]
+    },
+    "must_not_show": []
+   },
+   "pair": "CRIT-3"
+  },
+  {
+   "id": "AC37-04",
+   "category": "mixed_criticism",
+   "ac": [
+    "AC37"
+   ],
+   "title": "真实限制：同步功能尚未发布",
+   "claim": {
+    "statement": "Plugin X 2.0 的同步功能尚未发布。",
+    "claim_kind": "factual_assertion",
+    "aspect": "compatibility",
+    "importance": "medium",
+    "verifiability": "verifiable",
+    "qualifiers": {
+     "product_version": "2.0"
+    }
+   },
+   "materials": [
+    {
+     "role": "support",
+     "directness": "direct",
+     "artifact_integrity": "verified",
+     "independence_status": "unknown",
+     "origin_group_id": "G1",
+     "applicability": {
+      "product_version": "matched",
+      "date": "matched",
+      "environment": "matched",
+      "region": "matched",
+      "method": "matched"
+     },
+     "superseded": false,
+     "retention": "ok",
+     "limitations": []
+    }
+   ],
+   "expression": null,
+   "expect": {
+    "status": "corroborated",
+    "support_strength": "E2",
+    "refutation_strength": "E0",
+    "gate": [],
+    "policy": {
+     "feed": [
+      "allow",
+      "scoped_fact"
+     ],
+     "detail": [
+      "allow",
+      "scoped_fact"
+     ],
+     "title": [
+      "allow",
+      "scoped_fact"
+     ],
+     "overview": [
+      "allow",
+      "scoped_fact"
+     ],
+     "digest": [
+      "allow",
+      "scoped_fact"
+     ],
+     "search": [
+      "allow",
+      "scoped_fact"
+     ],
+     "export": [
+      "allow",
+      "scoped_fact"
+     ]
+    },
+    "must_not_show": []
+   },
+   "pair": "CRIT-4"
+  },
+  {
+   "id": "AC37-05",
+   "category": "mixed_criticism",
+   "ac": [
+    "AC37",
+    "AC42"
+   ],
+   "title": "错误指控：声称完全无法导入",
+   "claim": {
+    "statement": "Plugin X 2.0 完全无法导入文件。",
+    "claim_kind": "factual_assertion",
+    "aspect": "compatibility",
+    "importance": "high",
+    "verifiability": "verifiable",
+    "qualifiers": {
+     "product_version": "2.0"
+    }
+   },
+   "materials": [
+    {
+     "role": "refute",
+     "directness": "direct",
+     "artifact_integrity": "verified",
+     "independence_status": "confirmed",
+     "origin_group_id": "G1",
+     "applicability": {
+      "product_version": "matched",
+      "date": "matched",
+      "environment": "matched",
+      "region": "matched",
+      "method": "matched"
+     },
+     "superseded": false,
+     "retention": "ok",
+     "limitations": []
+    },
+    {
+     "role": "refute",
+     "directness": "direct",
+     "artifact_integrity": "verified",
+     "independence_status": "confirmed",
+     "origin_group_id": "G2",
+     "applicability": {
+      "product_version": "matched",
+      "date": "matched",
+      "environment": "matched",
+      "region": "matched",
+      "method": "matched"
+     },
+     "superseded": false,
+     "retention": "ok",
+     "limitations": []
+    }
+   ],
+   "expression": null,
+   "expect": {
+    "status": "refuted",
+    "support_strength": "E0",
+    "refutation_strength": "E3",
+    "gate": [],
+    "policy": {
+     "feed": [
+      "hold",
+      null
+     ],
+     "detail": [
+      "hold",
+      null
+     ],
+     "title": [
+      "hold",
+      null
+     ],
+     "overview": [
+      "hold",
+      null
+     ],
+     "digest": [
+      "hold",
+      null
+     ],
+     "search": [
+      "hold",
+      null
+     ],
+     "export": [
+      "hold",
+      null
+     ]
+    },
+    "must_not_show": [
+     "scoped_fact",
+     "attributed_unverified"
+    ]
+   },
+   "pair": "CRIT-1"
+  },
+  {
+   "id": "AC37-06",
+   "category": "mixed_criticism",
+   "ac": [
+    "AC37"
+   ],
+   "title": "错误指控：声称离线模式需要付费",
+   "claim": {
+    "statement": "Plugin X 2.0 离线模式需要付费。",
+    "claim_kind": "factual_assertion",
+    "aspect": "compatibility",
+    "importance": "medium",
+    "verifiability": "verifiable",
+    "qualifiers": {
+     "product_version": "2.0"
+    }
+   },
+   "materials": [
+    {
+     "role": "refute",
+     "directness": "direct",
+     "artifact_integrity": "verified",
+     "independence_status": "confirmed",
+     "origin_group_id": "G1",
+     "applicability": {
+      "product_version": "matched",
+      "date": "matched",
+      "environment": "matched",
+      "region": "matched",
+      "method": "matched"
+     },
+     "superseded": false,
+     "retention": "ok",
+     "limitations": []
+    },
+    {
+     "role": "refute",
+     "directness": "direct",
+     "artifact_integrity": "verified",
+     "independence_status": "confirmed",
+     "origin_group_id": "G2",
+     "applicability": {
+      "product_version": "matched",
+      "date": "matched",
+      "environment": "matched",
+      "region": "matched",
+      "method": "matched"
+     },
+     "superseded": false,
+     "retention": "ok",
+     "limitations": []
+    }
+   ],
+   "expression": null,
+   "expect": {
+    "status": "refuted",
+    "support_strength": "E0",
+    "refutation_strength": "E3",
+    "gate": [],
+    "policy": {
+     "feed": [
+      "hold",
+      null
+     ],
+     "detail": [
+      "hold",
+      null
+     ],
+     "title": [
+      "hold",
+      null
+     ],
+     "overview": [
+      "hold",
+      null
+     ],
+     "digest": [
+      "hold",
+      null
+     ],
+     "search": [
+      "hold",
+      null
+     ],
+     "export": [
+      "hold",
+      null
+     ]
+    },
+    "must_not_show": [
+     "scoped_fact"
+    ]
+   },
+   "pair": "CRIT-2"
+  },
+  {
+   "id": "AC37-07",
+   "category": "mixed_criticism",
+   "ac": [
+    "AC37"
+   ],
+   "title": "错误指控：声称所有平台均不可用",
+   "claim": {
+    "statement": "Plugin X 2.0 在所有平台均不可用。",
+    "claim_kind": "factual_assertion",
+    "aspect": "compatibility",
+    "importance": "medium",
+    "verifiability": "verifiable",
+    "qualifiers": {
+     "product_version": "2.0"
+    }
+   },
+   "materials": [
+    {
+     "role": "refute",
+     "directness": "direct",
+     "artifact_integrity": "verified",
+     "independence_status": "confirmed",
+     "origin_group_id": "G1",
+     "applicability": {
+      "product_version": "matched",
+      "date": "matched",
+      "environment": "matched",
+      "region": "matched",
+      "method": "matched"
+     },
+     "superseded": false,
+     "retention": "ok",
+     "limitations": []
+    },
+    {
+     "role": "refute",
+     "directness": "direct",
+     "artifact_integrity": "verified",
+     "independence_status": "confirmed",
+     "origin_group_id": "G2",
+     "applicability": {
+      "product_version": "matched",
+      "date": "matched",
+      "environment": "matched",
+      "region": "matched",
+      "method": "matched"
+     },
+     "superseded": false,
+     "retention": "ok",
+     "limitations": []
+    }
+   ],
+   "expression": null,
+   "expect": {
+    "status": "refuted",
+    "support_strength": "E0",
+    "refutation_strength": "E3",
+    "gate": [],
+    "policy": {
+     "feed": [
+      "hold",
+      null
+     ],
+     "detail": [
+      "hold",
+      null
+     ],
+     "title": [
+      "hold",
+      null
+     ],
+     "overview": [
+      "hold",
+      null
+     ],
+     "digest": [
+      "hold",
+      null
+     ],
+     "search": [
+      "hold",
+      null
+     ],
+     "export": [
+      "hold",
+      null
+     ]
+    },
+    "must_not_show": [
+     "scoped_fact"
+    ]
+   },
+   "pair": "CRIT-3"
+  },
+  {
+   "id": "AC37-08",
+   "category": "mixed_criticism",
+   "ac": [
+    "AC37"
+   ],
+   "title": "错误指控：声称已经停止维护",
+   "claim": {
+    "statement": "Plugin X 2.0 已经停止维护。",
+    "claim_kind": "factual_assertion",
+    "aspect": "compatibility",
+    "importance": "high",
+    "verifiability": "verifiable",
+    "qualifiers": {
+     "product_version": "2.0"
+    }
+   },
+   "materials": [
+    {
+     "role": "refute",
+     "directness": "direct",
+     "artifact_integrity": "verified",
+     "independence_status": "confirmed",
+     "origin_group_id": "G1",
+     "applicability": {
+      "product_version": "matched",
+      "date": "matched",
+      "environment": "matched",
+      "region": "matched",
+      "method": "matched"
+     },
+     "superseded": false,
+     "retention": "ok",
+     "limitations": []
+    },
+    {
+     "role": "refute",
+     "directness": "direct",
+     "artifact_integrity": "verified",
+     "independence_status": "confirmed",
+     "origin_group_id": "G2",
+     "applicability": {
+      "product_version": "matched",
+      "date": "matched",
+      "environment": "matched",
+      "region": "matched",
+      "method": "matched"
+     },
+     "superseded": false,
+     "retention": "ok",
+     "limitations": []
+    }
+   ],
+   "expression": null,
+   "expect": {
+    "status": "refuted",
+    "support_strength": "E0",
+    "refutation_strength": "E3",
+    "gate": [],
+    "policy": {
+     "feed": [
+      "hold",
+      null
+     ],
+     "detail": [
+      "hold",
+      null
+     ],
+     "title": [
+      "hold",
+      null
+     ],
+     "overview": [
+      "hold",
+      null
+     ],
+     "digest": [
+      "hold",
+      null
+     ],
+     "search": [
+      "hold",
+      null
+     ],
+     "export": [
+      "hold",
+      null
+     ]
+    },
+    "must_not_show": [
+     "scoped_fact",
+     "attributed_unverified"
+    ]
+   },
+   "pair": "CRIT-4"
+  },
+  {
+   "id": "CTRL-01",
+   "category": "true_feature",
+   "ac": [
+    "AC32",
+    "AC40"
+   ],
+   "title": "对照：真实功能且证据适用（强度 E2）",
+   "claim": {
+    "statement": "Plugin X 2.0 支持离线索引。",
+    "claim_kind": "factual_assertion",
+    "aspect": "compatibility",
+    "importance": "medium",
+    "verifiability": "verifiable",
+    "qualifiers": {
+     "product_version": "2.0"
+    }
+   },
+   "materials": [
+    {
+     "role": "support",
+     "directness": "direct",
+     "artifact_integrity": "verified",
+     "independence_status": "unknown",
+     "origin_group_id": "G1",
+     "applicability": {
+      "product_version": "matched",
+      "date": "matched",
+      "environment": "matched",
+      "region": "matched",
+      "method": "matched"
+     },
+     "superseded": false,
+     "retention": "ok",
+     "limitations": []
+    }
+   ],
+   "expression": null,
+   "expect": {
+    "status": "corroborated",
+    "support_strength": "E2",
+    "refutation_strength": "E0",
+    "gate": [],
+    "policy": {
+     "feed": [
+      "allow",
+      "scoped_fact"
+     ],
+     "detail": [
+      "allow",
+      "scoped_fact"
+     ],
+     "title": [
+      "allow",
+      "scoped_fact"
+     ],
+     "overview": [
+      "allow",
+      "scoped_fact"
+     ],
+     "digest": [
+      "allow",
+      "scoped_fact"
+     ],
+     "search": [
+      "allow",
+      "scoped_fact"
+     ],
+     "export": [
+      "allow",
+      "scoped_fact"
+     ]
+    },
+    "must_not_show": []
+   },
+   "pair": null
+  },
+  {
+   "id": "CTRL-02",
+   "category": "true_feature",
+   "ac": [
+    "AC32",
+    "AC40"
+   ],
+   "title": "对照：真实功能且证据适用（强度 E3）",
+   "claim": {
+    "statement": "Plugin X 2.0 支持离线索引。",
+    "claim_kind": "factual_assertion",
+    "aspect": "compatibility",
+    "importance": "high",
+    "verifiability": "verifiable",
+    "qualifiers": {
+     "product_version": "2.0"
+    }
+   },
+   "materials": [
+    {
+     "role": "support",
+     "directness": "direct",
+     "artifact_integrity": "verified",
+     "independence_status": "confirmed",
+     "origin_group_id": "G1",
+     "applicability": {
+      "product_version": "matched",
+      "date": "matched",
+      "environment": "matched",
+      "region": "matched",
+      "method": "matched"
+     },
+     "superseded": false,
+     "retention": "ok",
+     "limitations": []
+    },
+    {
+     "role": "support",
+     "directness": "direct",
+     "artifact_integrity": "verified",
+     "independence_status": "confirmed",
+     "origin_group_id": "G2",
+     "applicability": {
+      "product_version": "matched",
+      "date": "matched",
+      "environment": "matched",
+      "region": "matched",
+      "method": "matched"
+     },
+     "superseded": false,
+     "retention": "ok",
+     "limitations": []
+    }
+   ],
+   "expression": null,
+   "expect": {
+    "status": "corroborated",
+    "support_strength": "E3",
+    "refutation_strength": "E0",
+    "gate": [],
+    "policy": {
+     "feed": [
+      "allow",
+      "scoped_fact"
+     ],
+     "detail": [
+      "allow",
+      "scoped_fact"
+     ],
+     "title": [
+      "allow",
+      "scoped_fact"
+     ],
+     "overview": [
+      "allow",
+      "scoped_fact"
+     ],
+     "digest": [
+      "allow",
+      "scoped_fact"
+     ],
+     "search": [
+      "allow",
+      "scoped_fact"
+     ],
+     "export": [
+      "allow",
+      "scoped_fact"
+     ]
+    },
+    "must_not_show": []
+   },
+   "pair": null
+  },
+  {
+   "id": "CTRL-03",
+   "category": "true_feature",
+   "ac": [
+    "AC32",
+    "AC40"
+   ],
+   "title": "对照：真实功能且证据适用（强度 E3）",
+   "claim": {
+    "statement": "Plugin X 2.0 支持离线索引。",
+    "claim_kind": "factual_assertion",
+    "aspect": "compatibility",
+    "importance": "medium",
+    "verifiability": "verifiable",
+    "qualifiers": {
+     "product_version": "2.0"
+    }
+   },
+   "materials": [
+    {
+     "role": "support",
+     "directness": "direct",
+     "artifact_integrity": "verified",
+     "independence_status": "confirmed",
+     "origin_group_id": "G1",
+     "applicability": {
+      "product_version": "matched",
+      "date": "matched",
+      "environment": "matched",
+      "region": "matched",
+      "method": "matched"
+     },
+     "superseded": false,
+     "retention": "ok",
+     "limitations": []
+    },
+    {
+     "role": "support",
+     "directness": "direct",
+     "artifact_integrity": "verified",
+     "independence_status": "unknown",
+     "origin_group_id": "G2",
+     "applicability": {
+      "product_version": "matched",
+      "date": "matched",
+      "environment": "matched",
+      "region": "matched",
+      "method": "matched"
+     },
+     "superseded": false,
+     "retention": "ok",
+     "limitations": []
+    }
+   ],
+   "expression": null,
+   "expect": {
+    "status": "corroborated",
+    "support_strength": "E3",
+    "refutation_strength": "E0",
+    "gate": [],
+    "policy": {
+     "feed": [
+      "allow",
+      "scoped_fact"
+     ],
+     "detail": [
+      "allow",
+      "scoped_fact"
+     ],
+     "title": [
+      "allow",
+      "scoped_fact"
+     ],
+     "overview": [
+      "allow",
+      "scoped_fact"
+     ],
+     "digest": [
+      "allow",
+      "scoped_fact"
+     ],
+     "search": [
+      "allow",
+      "scoped_fact"
+     ],
+     "export": [
+      "allow",
+      "scoped_fact"
+     ]
+    },
+    "must_not_show": []
+   },
+   "pair": null
+  },
+  {
+   "id": "CTRL-04",
+   "category": "applicable_refutation",
+   "ac": [
+    "AC34",
+    "AC42"
+   ],
+   "title": "对照：适用的 E3 强反证使旧结论失效",
+   "claim": {
+    "statement": "Plugin X 2.0 支持离线索引。",
+    "claim_kind": "factual_assertion",
+    "aspect": "compatibility",
+    "importance": "medium",
+    "verifiability": "verifiable",
+    "qualifiers": {
+     "product_version": "2.0"
+    }
+   },
+   "materials": [
+    {
+     "role": "refute",
+     "directness": "direct",
+     "artifact_integrity": "verified",
+     "independence_status": "confirmed",
+     "origin_group_id": "G1",
+     "applicability": {
+      "product_version": "matched",
+      "date": "matched",
+      "environment": "matched",
+      "region": "matched",
+      "method": "matched"
+     },
+     "superseded": false,
+     "retention": "ok",
+     "limitations": []
+    },
+    {
+     "role": "refute",
+     "directness": "direct",
+     "artifact_integrity": "verified",
+     "independence_status": "confirmed",
+     "origin_group_id": "G2",
+     "applicability": {
+      "product_version": "matched",
+      "date": "matched",
+      "environment": "matched",
+      "region": "matched",
+      "method": "matched"
+     },
+     "superseded": false,
+     "retention": "ok",
+     "limitations": []
+    }
+   ],
+   "expression": null,
+   "expect": {
+    "status": "refuted",
+    "support_strength": "E0",
+    "refutation_strength": "E3",
+    "gate": [],
+    "policy": {
+     "feed": [
+      "hold",
+      null
+     ],
+     "detail": [
+      "hold",
+      null
+     ],
+     "title": [
+      "hold",
+      null
+     ],
+     "overview": [
+      "hold",
+      null
+     ],
+     "digest": [
+      "hold",
+      null
+     ],
+     "search": [
+      "hold",
+      null
+     ],
+     "export": [
+      "hold",
+      null
+     ]
+    },
+    "must_not_show": [
+     "scoped_fact",
+     "attributed_unverified"
+    ]
+   },
+   "pair": null
+  },
+  {
+   "id": "CTRL-05",
+   "category": "applicable_refutation",
+   "ac": [
+    "AC34",
+    "AC42"
+   ],
+   "title": "对照：适用的 E3 强反证使旧结论失效",
+   "claim": {
+    "statement": "Plugin X 2.0 支持离线索引。",
+    "claim_kind": "factual_assertion",
+    "aspect": "compatibility",
+    "importance": "medium",
+    "verifiability": "verifiable",
+    "qualifiers": {
+     "product_version": "2.0"
+    }
+   },
+   "materials": [
+    {
+     "role": "refute",
+     "directness": "direct",
+     "artifact_integrity": "verified",
+     "independence_status": "confirmed",
+     "origin_group_id": "G1",
+     "applicability": {
+      "product_version": "matched",
+      "date": "matched",
+      "environment": "matched",
+      "region": "matched",
+      "method": "matched"
+     },
+     "superseded": false,
+     "retention": "ok",
+     "limitations": []
+    },
+    {
+     "role": "refute",
+     "directness": "direct",
+     "artifact_integrity": "verified",
+     "independence_status": "confirmed",
+     "origin_group_id": "G2",
+     "applicability": {
+      "product_version": "matched",
+      "date": "matched",
+      "environment": "matched",
+      "region": "matched",
+      "method": "matched"
+     },
+     "superseded": false,
+     "retention": "ok",
+     "limitations": []
+    }
+   ],
+   "expression": null,
+   "expect": {
+    "status": "refuted",
+    "support_strength": "E0",
+    "refutation_strength": "E3",
+    "gate": [],
+    "policy": {
+     "feed": [
+      "hold",
+      null
+     ],
+     "detail": [
+      "hold",
+      null
+     ],
+     "title": [
+      "hold",
+      null
+     ],
+     "overview": [
+      "hold",
+      null
+     ],
+     "digest": [
+      "hold",
+      null
+     ],
+     "search": [
+      "hold",
+      null
+     ],
+     "export": [
+      "hold",
+      null
+     ]
+    },
+    "must_not_show": [
+     "scoped_fact",
+     "attributed_unverified"
+    ]
+   },
+   "pair": null
+  },
+  {
+   "id": "CTRL-06",
+   "category": "applicable_refutation",
+   "ac": [
+    "AC34",
+    "AC42"
+   ],
+   "title": "对照：适用的 E3 强反证使旧结论失效",
+   "claim": {
+    "statement": "Plugin X 2.0 支持离线索引。",
+    "claim_kind": "factual_assertion",
+    "aspect": "compatibility",
+    "importance": "medium",
+    "verifiability": "verifiable",
+    "qualifiers": {
+     "product_version": "2.0"
+    }
+   },
+   "materials": [
+    {
+     "role": "refute",
+     "directness": "direct",
+     "artifact_integrity": "verified",
+     "independence_status": "confirmed",
+     "origin_group_id": "G1",
+     "applicability": {
+      "product_version": "matched",
+      "date": "matched",
+      "environment": "matched",
+      "region": "matched",
+      "method": "matched"
+     },
+     "superseded": false,
+     "retention": "ok",
+     "limitations": []
+    },
+    {
+     "role": "refute",
+     "directness": "direct",
+     "artifact_integrity": "verified",
+     "independence_status": "confirmed",
+     "origin_group_id": "G2",
+     "applicability": {
+      "product_version": "matched",
+      "date": "matched",
+      "environment": "matched",
+      "region": "matched",
+      "method": "matched"
+     },
+     "superseded": false,
+     "retention": "ok",
+     "limitations": []
+    }
+   ],
+   "expression": null,
+   "expect": {
+    "status": "refuted",
+    "support_strength": "E0",
+    "refutation_strength": "E3",
+    "gate": [],
+    "policy": {
+     "feed": [
+      "hold",
+      null
+     ],
+     "detail": [
+      "hold",
+      null
+     ],
+     "title": [
+      "hold",
+      null
+     ],
+     "overview": [
+      "hold",
+      null
+     ],
+     "digest": [
+      "hold",
+      null
+     ],
+     "search": [
+      "hold",
+      null
+     ],
+     "export": [
+      "hold",
+      null
+     ]
+    },
+    "must_not_show": [
+     "scoped_fact",
+     "attributed_unverified"
+    ]
+   },
+   "pair": null
+  },
+  {
+   "id": "CTRL-07",
+   "category": "low_reliability_strong_evidence",
+   "ac": [
+    "AC38"
+   ],
+   "title": "对照：来源可靠度未知，但当前命题有可检查的直接证据",
+   "claim": {
+    "statement": "Plugin X 2.0 支持离线索引。",
+    "claim_kind": "factual_assertion",
+    "aspect": "compatibility",
+    "importance": "medium",
+    "verifiability": "verifiable",
+    "qualifiers": {
+     "product_version": "2.0"
+    }
+   },
+   "materials": [
+    {
+     "role": "support",
+     "directness": "direct",
+     "artifact_integrity": "verified",
+     "independence_status": "confirmed",
+     "origin_group_id": "G1",
+     "applicability": {
+      "product_version": "matched",
+      "date": "matched",
+      "environment": "matched",
+      "region": "matched",
+      "method": "matched"
+     },
+     "superseded": false,
+     "retention": "ok",
+     "limitations": []
+    }
+   ],
+   "expression": null,
+   "expect": {
+    "status": "corroborated",
+    "support_strength": "E2",
+    "refutation_strength": "E0",
+    "gate": [],
+    "policy": {
+     "feed": [
+      "allow",
+      "scoped_fact"
+     ],
+     "detail": [
+      "allow",
+      "scoped_fact"
+     ],
+     "title": [
+      "allow",
+      "scoped_fact"
+     ],
+     "overview": [
+      "allow",
+      "scoped_fact"
+     ],
+     "digest": [
+      "allow",
+      "scoped_fact"
+     ],
+     "search": [
+      "allow",
+      "scoped_fact"
+     ],
+     "export": [
+      "allow",
+      "scoped_fact"
+     ]
+    },
+    "must_not_show": []
+   },
+   "pair": null
+  },
+  {
+   "id": "CTRL-08",
+   "category": "low_reliability_strong_evidence",
+   "ac": [
+    "AC38"
+   ],
+   "title": "对照：来源可靠度未知，但当前命题有可检查的直接证据",
+   "claim": {
+    "statement": "Plugin X 2.0 支持离线索引。",
+    "claim_kind": "factual_assertion",
+    "aspect": "compatibility",
+    "importance": "medium",
+    "verifiability": "verifiable",
+    "qualifiers": {
+     "product_version": "2.0"
+    }
+   },
+   "materials": [
+    {
+     "role": "support",
+     "directness": "direct",
+     "artifact_integrity": "verified",
+     "independence_status": "confirmed",
+     "origin_group_id": "G1",
+     "applicability": {
+      "product_version": "matched",
+      "date": "matched",
+      "environment": "matched",
+      "region": "matched",
+      "method": "matched"
+     },
+     "superseded": false,
+     "retention": "ok",
+     "limitations": []
+    }
+   ],
+   "expression": null,
+   "expect": {
+    "status": "corroborated",
+    "support_strength": "E2",
+    "refutation_strength": "E0",
+    "gate": [],
+    "policy": {
+     "feed": [
+      "allow",
+      "scoped_fact"
+     ],
+     "detail": [
+      "allow",
+      "scoped_fact"
+     ],
+     "title": [
+      "allow",
+      "scoped_fact"
+     ],
+     "overview": [
+      "allow",
+      "scoped_fact"
+     ],
+     "digest": [
+      "allow",
+      "scoped_fact"
+     ],
+     "search": [
+      "allow",
+      "scoped_fact"
+     ],
+     "export": [
+      "allow",
+      "scoped_fact"
+     ]
+    },
+    "must_not_show": []
+   },
+   "pair": null
+  },
+  {
+   "id": "CTRL-09",
+   "category": "low_reliability_strong_evidence",
+   "ac": [
+    "AC38"
+   ],
+   "title": "对照：来源可靠度未知，但当前命题有可检查的直接证据",
+   "claim": {
+    "statement": "Plugin X 2.0 支持离线索引。",
+    "claim_kind": "factual_assertion",
+    "aspect": "compatibility",
+    "importance": "medium",
+    "verifiability": "verifiable",
+    "qualifiers": {
+     "product_version": "2.0"
+    }
+   },
+   "materials": [
+    {
+     "role": "support",
+     "directness": "direct",
+     "artifact_integrity": "verified",
+     "independence_status": "confirmed",
+     "origin_group_id": "G1",
+     "applicability": {
+      "product_version": "matched",
+      "date": "matched",
+      "environment": "matched",
+      "region": "matched",
+      "method": "matched"
+     },
+     "superseded": false,
+     "retention": "ok",
+     "limitations": []
+    }
+   ],
+   "expression": null,
+   "expect": {
+    "status": "corroborated",
+    "support_strength": "E2",
+    "refutation_strength": "E0",
+    "gate": [],
+    "policy": {
+     "feed": [
+      "allow",
+      "scoped_fact"
+     ],
+     "detail": [
+      "allow",
+      "scoped_fact"
+     ],
+     "title": [
+      "allow",
+      "scoped_fact"
+     ],
+     "overview": [
+      "allow",
+      "scoped_fact"
+     ],
+     "digest": [
+      "allow",
+      "scoped_fact"
+     ],
+     "search": [
+      "allow",
+      "scoped_fact"
+     ],
+     "export": [
+      "allow",
+      "scoped_fact"
+     ]
+    },
+    "must_not_show": []
+   },
+   "pair": null
+  },
+  {
+   "id": "CTRL-10",
+   "category": "asymmetric_dispute",
+   "ac": [
+    "AC41"
+   ],
+   "title": "对照：一侧直接证据、另一侧只有转述",
+   "claim": {
+    "statement": "Plugin X 2.0 支持离线索引。",
+    "claim_kind": "factual_assertion",
+    "aspect": "compatibility",
+    "importance": "medium",
+    "verifiability": "verifiable",
+    "qualifiers": {
+     "product_version": "2.0"
+    }
+   },
+   "materials": [
+    {
+     "role": "support",
+     "directness": "direct",
+     "artifact_integrity": "verified",
+     "independence_status": "unknown",
+     "origin_group_id": "G1",
+     "applicability": {
+      "product_version": "matched",
+      "date": "matched",
+      "environment": "matched",
+      "region": "matched",
+      "method": "matched"
+     },
+     "superseded": false,
+     "retention": "ok",
+     "limitations": []
+    },
+    {
+     "role": "refute",
+     "directness": "indirect",
+     "artifact_integrity": "verified",
+     "independence_status": "unknown",
+     "origin_group_id": "G2",
+     "applicability": {
+      "product_version": "matched",
+      "date": "matched",
+      "environment": "matched",
+      "region": "matched",
+      "method": "matched"
+     },
+     "superseded": false,
+     "retention": "ok",
+     "limitations": []
+    }
+   ],
+   "expression": null,
+   "expect": {
+    "status": "conflicted",
+    "support_strength": "E2",
+    "refutation_strength": "E1",
+    "gate": [],
+    "policy": {
+     "feed": [
+      "hold",
+      null
+     ],
+     "detail": [
+      "hold",
+      null
+     ],
+     "title": [
+      "hold",
+      null
+     ],
+     "overview": [
+      "hold",
+      null
+     ],
+     "digest": [
+      "hold",
+      null
+     ],
+     "search": [
+      "hold",
+      null
+     ],
+     "export": [
+      "hold",
+      null
+     ]
+    },
+    "must_not_show": [
+     "scoped_fact"
+    ]
+   },
+   "pair": null
+  },
+  {
+   "id": "CTRL-11",
+   "category": "asymmetric_dispute",
+   "ac": [
+    "AC41"
+   ],
+   "title": "对照：一侧直接证据、另一侧只有转述",
+   "claim": {
+    "statement": "Plugin X 2.0 支持离线索引。",
+    "claim_kind": "factual_assertion",
+    "aspect": "compatibility",
+    "importance": "medium",
+    "verifiability": "verifiable",
+    "qualifiers": {
+     "product_version": "2.0"
+    }
+   },
+   "materials": [
+    {
+     "role": "support",
+     "directness": "direct",
+     "artifact_integrity": "verified",
+     "independence_status": "unknown",
+     "origin_group_id": "G1",
+     "applicability": {
+      "product_version": "matched",
+      "date": "matched",
+      "environment": "matched",
+      "region": "matched",
+      "method": "matched"
+     },
+     "superseded": false,
+     "retention": "ok",
+     "limitations": []
+    },
+    {
+     "role": "refute",
+     "directness": "indirect",
+     "artifact_integrity": "verified",
+     "independence_status": "unknown",
+     "origin_group_id": "G2",
+     "applicability": {
+      "product_version": "matched",
+      "date": "matched",
+      "environment": "matched",
+      "region": "matched",
+      "method": "matched"
+     },
+     "superseded": false,
+     "retention": "ok",
+     "limitations": []
+    }
+   ],
+   "expression": null,
+   "expect": {
+    "status": "conflicted",
+    "support_strength": "E2",
+    "refutation_strength": "E1",
+    "gate": [],
+    "policy": {
+     "feed": [
+      "hold",
+      null
+     ],
+     "detail": [
+      "hold",
+      null
+     ],
+     "title": [
+      "hold",
+      null
+     ],
+     "overview": [
+      "hold",
+      null
+     ],
+     "digest": [
+      "hold",
+      null
+     ],
+     "search": [
+      "hold",
+      null
+     ],
+     "export": [
+      "hold",
+      null
+     ]
+    },
+    "must_not_show": [
+     "scoped_fact"
+    ]
+   },
+   "pair": null
+  },
+  {
+   "id": "CTRL-12",
+   "category": "asymmetric_dispute",
+   "ac": [
+    "AC41"
+   ],
+   "title": "对照：一侧直接证据、另一侧只有转述",
+   "claim": {
+    "statement": "Plugin X 2.0 支持离线索引。",
+    "claim_kind": "factual_assertion",
+    "aspect": "compatibility",
+    "importance": "medium",
+    "verifiability": "verifiable",
+    "qualifiers": {
+     "product_version": "2.0"
+    }
+   },
+   "materials": [
+    {
+     "role": "support",
+     "directness": "direct",
+     "artifact_integrity": "verified",
+     "independence_status": "unknown",
+     "origin_group_id": "G1",
+     "applicability": {
+      "product_version": "matched",
+      "date": "matched",
+      "environment": "matched",
+      "region": "matched",
+      "method": "matched"
+     },
+     "superseded": false,
+     "retention": "ok",
+     "limitations": []
+    },
+    {
+     "role": "refute",
+     "directness": "indirect",
+     "artifact_integrity": "verified",
+     "independence_status": "unknown",
+     "origin_group_id": "G2",
+     "applicability": {
+      "product_version": "matched",
+      "date": "matched",
+      "environment": "matched",
+      "region": "matched",
+      "method": "matched"
+     },
+     "superseded": false,
+     "retention": "ok",
+     "limitations": []
+    }
+   ],
+   "expression": null,
+   "expect": {
+    "status": "conflicted",
+    "support_strength": "E2",
+    "refutation_strength": "E1",
+    "gate": [],
+    "policy": {
+     "feed": [
+      "hold",
+      null
+     ],
+     "detail": [
+      "hold",
+      null
+     ],
+     "title": [
+      "hold",
+      null
+     ],
+     "overview": [
+      "hold",
+      null
+     ],
+     "digest": [
+      "hold",
+      null
+     ],
+     "search": [
+      "hold",
+      null
+     ],
+     "export": [
+      "hold",
+      null
+     ]
+    },
+    "must_not_show": [
+     "scoped_fact"
+    ]
+   },
+   "pair": null
+  }
+ ]
+}

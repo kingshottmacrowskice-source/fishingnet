@@ -1,0 +1,42 @@
+{
+  "license": "CC0-1.0",
+  "synthetic": true,
+  "sources": [
+    {
+      "id": "source-1",
+      "title": "初次试用",
+      "text": "【合成示例】Plugin X 2.0：我认为它的界面很清晰。",
+      "expected": "opinion"
+    },
+    {
+      "id": "source-2",
+      "title": "另一份界面评价",
+      "text": "【合成示例】Plugin X 2.0：我认为它的界面很清晰。",
+      "expected": "revision"
+    },
+    {
+      "id": "source-3",
+      "title": "批评与限制",
+      "text": "【合成示例】Plugin X 1.0：我认为它的设置过程令人困惑。",
+      "expected": "opinion"
+    },
+    {
+      "id": "source-4",
+      "title": "功能宣传待核实",
+      "text": "【合成示例】Plugin X 2.0 支持离线索引。",
+      "expected": "hold"
+    },
+    {
+      "id": "source-5",
+      "title": "有限测试待复核",
+      "text": "【合成示例】Plugin X 2.0 在我的测试环境 Windows 中不能离线索引。",
+      "expected": "hold"
+    },
+    {
+      "id": "source-6",
+      "title": "更正材料待复核",
+      "text": "【合成示例】Plugin X 2.0 只在测试版可用，正式版不支持离线索引。",
+      "expected": "hold"
+    }
+  ]
+}

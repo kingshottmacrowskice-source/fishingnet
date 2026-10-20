@@ -1,0 +1,7 @@
+{
+  "complete": true,
+  "installed": true,
+  "pip_check": "passed",
+  "cache": ".runtime/subtitle-wheels",
+  "versions": "requirements.lock"
+}
