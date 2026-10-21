@@ -356,13 +356,17 @@ def cleanup_discovery_items(days=None, limit=DISCOVERY_CLEANUP_BATCH) -> int:
         return int(result.rowcount or 0)
 
 
-def _store_caption(job, remote, subtitles):
+def _store_caption(job, remote, subtitles, pinned_comments=None):
     segments = list(subtitles.segments)
     raw_hash = digest(js({'language': subtitles.language or 'zh', 'segments': segments}))
     normalized_hash = digest(js(segments))
     coverage = {'status': 'complete', 'source': 'platform_caption',
                 'track': subtitles.language, 'segment_count': len(segments),
                 'note': '平台字幕原文；未做转写、未做 AI 分析'}
+    meta = {'subtitle_status': 'available', 'subtitle_language': subtitles.language or 'zh',
+            'subtitle_segments': len(segments)}
+    if pinned_comments:
+        meta['pinned_comments'] = pinned_comments
     with engine.begin() as conn:
         changed = execute(conn, """UPDATE jobs SET stage='store_version', updated_at=now(),
             lease_until=now()+make_interval(secs=>:lease)
@@ -389,8 +393,7 @@ def _store_caption(job, remote, subtitles):
             metadata=metadata || CAST(:meta AS jsonb),last_checked_at=now(),updated_at=now(),revision=revision+1
             WHERE id=:sid AND workspace_id=:ws""",
             vid=version['id'], sid=job['input']['source_id'], ws=job['workspace_id'],
-            meta=js({'subtitle_status': 'available', 'subtitle_language': subtitles.language or 'zh',
-                     'subtitle_segments': len(segments)}))
+            meta=js(meta))
         # Hand the stored text to the extraction stage. The Mock gateway does not
         # analyse real material, so this job will stop at "needs_review".
         execute(conn, '''INSERT INTO jobs(workspace_id,kind,input,config_snapshot,idempotency_key)
@@ -504,7 +507,17 @@ def collect(job):
                 return
             _checkpoint(job, 'store_version', {'subtitles': subtitles.to_checkpoint()})
         if subtitles.status == 'available':
-            version = _store_caption(job, remote, subtitles)
+            pinned = []
+            try:
+                pinned = collector.fetch_pinned_comments(
+                    locator, aid=(remote.metadata or {}).get('aid'), credential=credential)
+            except CollectorError:
+                # A pinned comment is extra context; the caption is authoritative.
+                pinned = []
+            if keeper.lost or _cancelled(job):
+                _fence_lost(job)
+                return
+            version = _store_caption(job, remote, subtitles, pinned)
             _mark_platform_success(job)
             _finish(job, 'succeeded', {
                 'message': f'已保存平台字幕原文（{len(subtitles.segments)} 段）；未做 AI 分析，等待配置真实模型或人工复核。',

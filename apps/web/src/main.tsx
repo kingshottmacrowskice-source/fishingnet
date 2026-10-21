@@ -192,7 +192,7 @@ function App(){
  if(!user)return <Auth initialized={initialized} onDone={()=>{setInitialized(true);api('/auth/me').then(setUser)}}/>
  return <><SimpleHome api={api} page={page} navigate={setPage} refresh={refresh} importSource={()=>setImporting(true)}
   schedule={<DiscoveryPanel bump={bump}/>}
-  settings={<><BudgetPanel settings={settings} reload={()=>api('/settings').then(setSettings)}/><ProfileForm user={user} timezone={settings.timezone} done={()=>api('/auth/me').then(setUser)}/><button className="outline" onClick={()=>api('/auth/logout',{method:'POST'}).then(()=>setUser(null))}>退出登录</button></>}
+  settings={<><BudgetPanel settings={settings} reload={()=>api('/settings').then(setSettings)}/><ProfileForm user={user} timezone={settings.timezone} done={()=>api('/auth/me').then(setUser)}/><ClearDataPanel/><button className="outline" onClick={()=>api('/auth/logout',{method:'POST'}).then(()=>setUser(null))}>退出登录</button></>}
   models={<ModelsPanel bump={bump}/>} platforms={<PlatformPanel items={items} bump={bump}/>}/>
   {importing&&<ImportModal close={()=>setImporting(false)} done={()=>{setImporting(false);bump()}}/>}</>
 
@@ -320,18 +320,10 @@ function PlatformPanel({items,bump}:{items:Row[],bump:()=>void}){
  </>
 }
 function DiscoveryPanel({bump}:{bump:()=>void}){
- const [list,setList]=useState<Row[]>([]),[meta,setMeta]=useState<Row>({}),[loading,setLoading]=useState(true),[busy,setBusy]=useState(false),[error,setError]=useState(''),[notice,setNotice]=useState(''),[detail,setDetail]=useState<Row|null>(null)
- const [name,setName]=useState(''),[keywords,setKeywords]=useState(''),[terms,setTerms]=useState(''),[languages,setLanguages]=useState('zh-CN, zh-Hans')
- const [limit,setLimit]=useState('10'),[pages,setPages]=useState('2'),[intervalMinutes,setIntervalMinutes]=useState('1440')
- const [authorized,setAuthorized]=useState(false),[enabled,setEnabled]=useState(false),[dailyTime,setDailyTime]=useState('08:00'),[scheduleMode,setScheduleMode]=useState('daily')
- const split=(value:string)=>value.split(/[,，、\n]/).map(v=>v.trim()).filter(Boolean)
+ const [list,setList]=useState<Row[]>([]),[meta,setMeta]=useState<Row>({}),[loading,setLoading]=useState(true),[busy,setBusy]=useState(false),[error,setError]=useState(''),[notice,setNotice]=useState(''),[detail,setDetail]=useState<Row|null>(null),[showCreate,setShowCreate]=useState(false)
  async function load(){setLoading(true);setError('');try{const r=await api('/discovery-sources');setList(r.items);setMeta(r)}catch(e:any){setError(e.message)}finally{setLoading(false)}}
  useEffect(()=>{load()},[])
  async function run(work:()=>Promise<any>,message:string|((result:any)=>string)){if(busy)return;setBusy(true);setError('');setNotice('');try{const result=await work();setNotice(typeof message==='function'?message(result):message);await load();bump()}catch(e:any){setError(e.message)}finally{setBusy(false)}}
- async function createSource(e:React.FormEvent<HTMLFormElement>){e.preventDefault();await run(async()=>{
-  await api('/discovery-sources',{method:'POST',body:JSON.stringify({name,keywords:split(keywords),exclude_terms:split(terms),languages:split(languages),max_results_per_run:Number(limit),max_pages_per_run:Number(pages),schedule_interval_minutes:Number(intervalMinutes),daily_time:scheduleMode==='daily'?dailyTime:null,schedule_timezone:'Asia/Shanghai',enabled,network_authorized:authorized})})
-  setName('');setKeywords('');setTerms('');setAuthorized(false);setEnabled(false)
- },'关键词任务已保存')}
  async function toggle(s:Row,field:'enabled'|'network_authorized'){await run(async()=>{
   const payload:Row={name:s.name,platform:s.platform,keywords:s.keywords,exclude_terms:s.exclude_terms,languages:s.languages,match_mode:s.match_mode,language_policy:s.language_policy,page_policy:s.page_policy,target_pages:s.target_pages,max_results_per_run:s.limits.max_results_per_run,max_pages_per_run:s.limits.max_pages_per_run,max_requests_per_run:s.limits.max_requests_per_run,rescan_after_hours:s.limits.rescan_after_hours,schedule_interval_minutes:s.schedule_interval_minutes,daily_time:s.daily_time,schedule_timezone:s.schedule_timezone,enabled:s.enabled,network_authorized:s.network_authorized}
   payload[field]=!s[field]
@@ -343,21 +335,9 @@ function DiscoveryPanel({bump}:{bump:()=>void}){
  return <>
   <h3>关键词任务</h3>
   <p className="small-note">按关键词筛选最新视频，获取字幕并生成一条完整总结；本轮结束后汇总信息、更新实体和当日日报。已经总结的视频不会再次调用模型。</p>
-  <h4>新建关键词来源</h4>
-  <form onSubmit={createSource} className="discovery-form">
-   <label>名称<input required value={name} maxLength={80} onChange={e=>setName(e.target.value)} placeholder="例如：AI 行业观察"/></label>
-   <label>关键词（最多 5 个，逗号分隔）<input required value={keywords} onChange={e=>setKeywords(e.target.value)} placeholder="AI, 大模型"/></label>
-   <label>排除词（可选，命中标题或作者即跳过）<input value={terms} onChange={e=>setTerms(e.target.value)} placeholder="广告, 搬运"/></label>
-   <label>优先字幕语言（逗号分隔）<input value={languages} onChange={e=>setLanguages(e.target.value)} placeholder="zh-CN, zh-Hans"/></label>
-   <div className="form-row">
-    <label>每轮视频上限<input type="number" min={1} max={20} value={limit} onChange={e=>setLimit(e.target.value)}/></label>
-    <label>每轮页数<input type="number" min={1} max={3} value={pages} onChange={e=>setPages(e.target.value)}/></label>
-    <label>运行方式<select value={scheduleMode} onChange={e=>setScheduleMode(e.target.value)}><option value="daily">每天固定时间（北京时间）</option><option value="interval">按间隔运行</option></select></label>{scheduleMode==='daily'?<label>每天<input type="time" required value={dailyTime} onChange={e=>setDailyTime(e.target.value)}/></label>:<label>定时间隔（分钟）<input type="number" min={60} max={10080} value={intervalMinutes} onChange={e=>setIntervalMinutes(e.target.value)}/></label>}
-   </div>
-   <label className="check"><input type="checkbox" checked={authorized} onChange={e=>setAuthorized(e.target.checked)}/> 我授权本机在运行时低频访问 B站 公开搜索接口（可随时关闭；未勾选时不会发起任何请求）</label>
-   <label className="check"><input type="checkbox" checked={enabled} onChange={e=>setEnabled(e.target.checked)}/> 创建后立即启用定时调度</label>
-   <button className="primary" disabled={busy||!name||!split(keywords).length}>{busy?'正在保存…':'创建关键词来源'}</button>
-  </form>
+  <button className="primary" onClick={()=>setShowCreate(true)}><Plus size={16}/>新建关键词来源</button>
+
+  {showCreate&&<KeywordSourceModal close={()=>setShowCreate(false)} done={()=>{setShowCreate(false);load();bump()}}/>}
 
   {loading?<p className="muted">正在读取关键词来源…</p>:list.length===0?<Empty title="还没有关键词来源" text="先创建一个来源并保存；只有你明确勾选联网授权并启用后，调度器才会处理它。"/>:null}
   {list.map(s=><article className="discovery-card" key={s.id}>
@@ -392,7 +372,58 @@ function DiscoveryPanel({bump}:{bump:()=>void}){
   <p className="muted">说明：关键词发现的上游请求尚未完成真实网络烟测；本文档和界面都不会把它写成“真实采集已验证”。分P批量已支持，但必须逐次明确确认，且不会自动抓取未选分P。</p>
  </>
 }
+function KeywordSourceModal({close,done}:{close:()=>void,done:()=>void}){
+ const [name,setName]=useState(''),[keywords,setKeywords]=useState(''),[terms,setTerms]=useState(''),[languages,setLanguages]=useState('zh-CN, zh-Hans')
+ const [limit,setLimit]=useState('10'),[pages,setPages]=useState('2'),[intervalMinutes,setIntervalMinutes]=useState('1440')
+ const [authorized,setAuthorized]=useState(false),[enabled,setEnabled]=useState(false),[dailyTime,setDailyTime]=useState('08:00'),[scheduleMode,setScheduleMode]=useState('daily')
+ const [busy,setBusy]=useState(false),[error,setError]=useState('')
+ const split=(value:string)=>value.split(/[,，、\n]/).map(v=>v.trim()).filter(Boolean)
+ async function submit(e:React.FormEvent<HTMLFormElement>){
+  e.preventDefault();if(busy)return
+  setBusy(true);setError('')
+  try{await api('/discovery-sources',{method:'POST',body:JSON.stringify({name,keywords:split(keywords),exclude_terms:split(terms),languages:split(languages),max_results_per_run:Number(limit),max_pages_per_run:Number(pages),schedule_interval_minutes:Number(intervalMinutes),daily_time:scheduleMode==='daily'?dailyTime:null,schedule_timezone:'Asia/Shanghai',enabled,network_authorized:authorized})});done()}
+  catch(e:any){setError(e.message)}
+  finally{setBusy(false)}
+ }
+ return <div className="overlay modal-overlay" role="dialog" aria-modal="true" aria-label="新建关键词来源" onClick={close}>
+  <section className="modal" onClick={e=>e.stopPropagation()}>
+   <div className="drawer-head"><strong>新建关键词来源</strong><button onClick={close} aria-label="关闭新建关键词来源"><X size={18}/></button></div>
+   <form onSubmit={submit} className="discovery-form">
+    <label>名称<input required value={name} maxLength={80} onChange={e=>setName(e.target.value)} placeholder="例如：AI 行业观察"/></label>
+    <label>关键词（最多 5 个，逗号分隔）<input required value={keywords} onChange={e=>setKeywords(e.target.value)} placeholder="AI, 大模型"/></label>
+    <label>排除词（可选，命中标题或作者即跳过）<input value={terms} onChange={e=>setTerms(e.target.value)} placeholder="广告, 搬运"/></label>
+    <label>优先字幕语言（逗号分隔）<input value={languages} onChange={e=>setLanguages(e.target.value)} placeholder="zh-CN, zh-Hans"/></label>
+    <div className="form-row">
+     <label>每轮视频上限<input type="number" min={1} max={20} value={limit} onChange={e=>setLimit(e.target.value)}/></label>
+     <label>每轮页数<input type="number" min={1} max={3} value={pages} onChange={e=>setPages(e.target.value)}/></label>
+     <label>运行方式<select value={scheduleMode} onChange={e=>setScheduleMode(e.target.value)}><option value="daily">每天固定时间（北京时间）</option><option value="interval">按间隔运行</option></select></label>{scheduleMode==='daily'?<label>每天<input type="time" required value={dailyTime} onChange={e=>setDailyTime(e.target.value)}/></label>:<label>定时间隔（分钟）<input type="number" min={60} max={10080} value={intervalMinutes} onChange={e=>setIntervalMinutes(e.target.value)}/></label>}
+    </div>
+    <label className="check"><input type="checkbox" checked={authorized} onChange={e=>setAuthorized(e.target.checked)}/> 我授权本机在运行时低频访问 B站 公开搜索接口（可随时关闭；未勾选时不会发起任何请求）</label>
+    <label className="check"><input type="checkbox" checked={enabled} onChange={e=>setEnabled(e.target.checked)}/> 创建后立即启用定时调度</label>
+    {error&&<div role="alert" className="error">{error}</div>}
+    <button className="primary" disabled={busy||!name||!split(keywords).length}>{busy?'正在保存…':'创建关键词来源'}</button>
+   </form>
+  </section>
+ </div>
+}
 function StatusRow({name,value}:{name:string,value:string}){return <div className="status-row"><span>{name}</span><strong>{value}</strong></div>}
+function ClearDataPanel(){
+ const [busy,setBusy]=useState(false),[error,setError]=useState(''),[notice,setNotice]=useState('')
+ async function clear(){
+  if(!window.confirm('确定清空所有信息、实体、日报和自动任务数据吗？登录信息、平台账号和模型配置会保留；此操作不可撤销。'))return
+  setBusy(true);setError('');setNotice('')
+  try{const r=await api('/simple/clear-content',{method:'POST'});setNotice('已清空内容数据（共 '+r.cleared+' 张表）')}
+  catch(e:any){setError(e.message)}
+  finally{setBusy(false)}
+ }
+ return <div className="budget-form">
+  <div className="section-caption"><h4>清空内容数据</h4><span className="tag amber">不可撤销</span></div>
+  <p className="small-note">清空信息、实体、日报与自动任务（关键词来源、@设置、运行记录、任务队列）。保留登录信息、平台账号与模型配置。</p>
+  {error&&<div role="alert" className="error">{error}</div>}
+  {notice&&<div role="status" className="notice">{notice}</div>}
+  <button className="outline" disabled={busy} onClick={clear}>{busy?'正在清空…':'清空内容数据'}</button>
+ </div>
+}
 function BudgetPanel({settings,reload}:{settings:Row,reload:()=>void}){
  const [daily,setDaily]=useState(String(settings.daily_budget??'0')),[monthly,setMonthly]=useState(String(settings.monthly_budget??'0'))
  const [currency,setCurrency]=useState(String(settings.budget_currency||'USD')),[policy,setPolicy]=useState(String(settings.data_policy||'local_only'))

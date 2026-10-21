@@ -24,7 +24,7 @@
 
 已完成：修复 `ai-zh/ai-en` 与语言偏好的匹配，默认中文优先且严格中文筛选不会排除 `ai-zh`；字幕空清单提示改为“本次接口未返回可用字幕轨”，来源标签改为“未取得字幕”，不再断言视频没有字幕。保留原状态字段和不可变历史，不改写此前任务结果。新增 3 项合成回归，**全量 173 passed / 20 warnings（18.75s）**；前端生产构建通过。没有 API 结构变化，OpenAPI 无需变更。
 
-核对发行包 `bilibili-api-python 17.4.1`：`get_subtitle` 调用 `/x/player/wbi/v2`，默认 WBI/WBI2 开启，默认浏览器 UA、自动 buvid 与 WBI 错误重试不能直接带入本项目。拟接入方式必须只保留获准的标准 WBI，关闭 WBI2 模拟行为、自动设备激活、ticket 与额外重试；所有实际请求统一经过现有限速、4 次请求预算、错误映射与短事务/心跳/fence。字幕 CDN 请求不应附带平台凭证。依赖许可证为 GPL-3.0-or-later，不能把 DSH 包装层的 MIT 误作其依赖许可证。尚未实现此适配层、尚未安装该库。
+核对发行包 `bilibili-api-python 17.4.1`：`get_subtitle` 调用 `/x/player/wbi/v2`，默认 WBI/WBI2 开启，默认浏览器 UA、自动 buvid 与 WBI 错误重试不能直接带入本项目。拟接入方式必须只保留获准的标准 WBI，关闭 WBI2 模拟行为、自动设备激活、ticket 与额外重试；所有实际请求统一经过现有限速、5 次请求预算（含置顶评论）、错误映射与短事务/心跳/fence。字幕 CDN 请求不应附带平台凭证。依赖许可证为 GPL-3.0-or-later，不能把 DSH 包装层的 MIT 误作其依赖许可证。尚未实现此适配层、尚未安装该库。
 
 发行 wheel 已成功下载到本地 `.runtime/bilibili_api_python-17.4.1-py3-none-any.whl`，SHA-256 `3054b824f0f7ac81917329f19909f39d24fb3b7d9de1672c6dd4cb9fa6e5757d` 校验一致。随后 pip（官方 PyPI、timeout=20、retries=0）输出 `Downloading beautifulsoup4-4.15.0-py3-none-any.whl.metadata (3.8 kB)` 后持续无进展，按用户要求人工中止，退出码 1；没有收到具体 HTTP/网络异常，不能推断为某个域名故障。未重试、未切镜像、未改代理。核对后该库及其新增依赖均未安装，requirements.lock 未变。
 
@@ -74,7 +74,7 @@
 2. **不得批量抓取**：单链接导入只处理用户逐条提交的视频；关键词发现只读取用户自配置关键词的**搜索结果页**，每轮最多 3 页、每轮最多 20 条候选、每轮最多 4 次上游请求；不做 UP 主全量遍历、不做全站抓取、不做合集/播放列表展开、不按播放量或排名生成推荐流。
 3. **不得自动互动**：不评论、不 @、不回复、不点赞、不投币、不收藏、不关注。参考项目 `dsh-bili-scroll` 的自动评论等能力明确不采用。
 4. **不得转存视频**：只读取平台返回的元数据与字幕文本；不下载、不缓存、不代理播放视频流。
-5. **频率**：单条采集任务正常最多 3 次上游请求（元数据、字幕清单、字幕正文），实例上限 4 次（仅供超时/5xx 的单次重试）；关键词发现每轮请求数由来源配置限制在 1–4 次、页数 1–3 页；账号检查是独立的 1 次请求。同一进程内两次请求最小间隔 1.5 秒（`FISHINGNET_BILIBILI_MIN_INTERVAL` 可调高，不建议调低）。
+5. **频率**：单条采集任务正常最多 4 次上游请求（元数据、字幕清单、字幕正文、置顶评论），实例上限 5 次（仅供超时/5xx 的单次重试）；关键词发现每轮请求数由来源配置限制在 1–4 次、页数 1–3 页；账号检查是独立的 1 次请求。同一进程内两次请求最小间隔 1.5 秒（`FISHINGNET_BILIBILI_MIN_INTERVAL` 可调高，不建议调低）。
 6. **不自动重试**：仅对网络超时/5xx 做 1 次延迟重试；遇到 `412`、`-352`、`-101`、`-403` 等风控或鉴权错误立即停止，交由用户处理，不换 IP、不换账号、不加重试。失败会记入 `discovery_sources.failure_streak` 并以 15 分钟起指数退避，但不会静默停用来源。
 7. **凭证**：`SESSDATA` 等 Cookie 只能由用户在本机应用界面提交，使用 `MASTER_KEY` 派生的 Fernet 密钥加密后落库；不写日志、不进错误信息、不回显、不发送给模型供应商。断开连接时清除本地密文。
 8. **默认零预算**：不调用任何模型/付费接口；字幕原文已保存时，处理任务停在“待复核”，不伪装成 AI 分析完成。
@@ -90,13 +90,14 @@
 | 登录态/能力 | `GET https://api.bilibili.com/x/web-interface/nav` | 需 `SESSDATA` | `data.isLogin`、`data.uname`、`data.mid`、`data.vipStatus` | `code=-101`→`CREDENTIAL_EXPIRED`；未配置凭证→`NOT_CONFIGURED` |
 | 字幕清单 | `GET https://api.bilibili.com/x/player/v2?bvid=...&cid=...` | 需 `SESSDATA` | `data.subtitle.subtitles[]`（`lan`、`lan_doc`、`subtitle_url`、`ai_type`） | 空数组→`missing`（缺字幕）；未登录→`login_required` |
 | 字幕正文 | `GET https://...subtitle_url` | 随清单 | `body[]`（`from`、`to`、`content`） | 结构不符→`SUBTITLE_UNREADABLE` |
+| 置顶评论 | `GET https://api.bilibili.com/x/v2/reply?type=1&oid=...` | 需 `SESSDATA`（可选） | `data.top`、`data.upper`（置顶/UP主置顶），`data.replies[].is_top` | 无置顶→空列表；仅作总结的附加上下文，失败不影响采集 |
 
 实现约定：
 
 - 请求头使用**如实标识**的 User-Agent（`FishingNet/0.1 local-single-user`），不伪装成浏览器；带 `Referer: https://www.bilibili.com/`（多数网页接口要求）。
 - 元数据接口匿名可用；字幕接口匿名通常返回空字幕列表，**因此“取不到字幕”不能等同于“视频没有字幕”**，必须区分 `login_required` 与 `missing`。
 - 分P身份使用 `(BV号, p 序号)`：`external_id = "{bvid}:p{n}"`，`cid` 存入 `metadata.video_cid`；主视频信息放来源元数据。
-- 单次超时 8 秒，总请求预算 4 次；超时或上游异常如实写入任务 `error_code`，不把失败显示成“没有新信息”。
+- 单次超时 8 秒，总请求预算 5 次；超时或上游异常如实写入任务 `error_code`，不把失败显示成“没有新信息”。
 
 ## 4.1 扫码登录（网页登录流程，非开放平台 OAuth）
 

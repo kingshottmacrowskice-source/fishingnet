@@ -43,7 +43,7 @@ COLLECTOR_VERSION = 'bilibili.v2'
 API = 'https://api.bilibili.com'
 PASSPORT = 'https://passport.bilibili.com'
 DEFAULT_ORIGIN = 'https://www.bilibili.com'
-MAX_REQUESTS = 4
+MAX_REQUESTS = 5
 MAX_DISCOVERY_PAGES = 3
 DISCOVERY_PAGE_SIZE = 20
 MIN_INTERVAL_SECONDS = 1.5
@@ -292,7 +292,7 @@ class BilibiliCollector:
             platform=self.platform, label='哔哩哔哩', single_url=True, metadata=True, subtitles=True,
             keyword_discovery=True, scheduling=True, qr_login=True,
             credential_required_for=('字幕清单', '登录态检查'),
-            max_requests_per_job=4, max_discovery_pages=MAX_DISCOVERY_PAGES,
+            max_requests_per_job=5, max_discovery_pages=MAX_DISCOVERY_PAGES,
             notes=('网页内部接口，非官方开放平台授权；结果受平台风控影响',
                    '字幕需要用户在本机提供的登录 Cookie，匿名只能读取公开元数据',
                    '关键词发现只读取搜索结果的公开元数据页，每轮最多 3 页；不遍历 UP 主、不抓取合集、不下载视频',
@@ -376,6 +376,8 @@ class BilibiliCollector:
                        'duration_seconds': item.duration_seconds} for item in pages[:100]],
             'subtitle_status': 'unknown',
             'rights_basis': 'user_provided_link',
+            'desc': re.sub(_MARKUP, ' ', str(data.get('desc') or '')).strip()[:5000],
+            'aid': int(data.get('aid') or 0),
         }
         external_id = f"{data.get('bvid') or locator.video_id}:p{page.page_no}"
         return RemoteSource(
@@ -450,6 +452,45 @@ class BilibiliCollector:
             status='available', segments=segments, content=content, language=track.language,
             format='json', tracks=tracks,
             detail=f"使用字幕轨：{track.label or track.language}{'（机器生成）' if track.machine else ''}")
+
+    def fetch_pinned_comments(self, locator: Locator, *, aid: int | None = None,
+                              credential: Credential | None = None) -> list[str]:
+        """One bounded read of the UP-pinned (置顶) comment for summary context.
+
+        Best-effort by design: callers catch ``CollectorError`` and continue with
+        an empty list, since the caption is the authoritative content and a pinned
+        comment is only extra context. ``type=1`` is a video comment thread.
+        """
+        if not aid:
+            return []
+        payload = self._request_json(f'{API}/x/v2/reply', {'type': 1, 'oid': aid, 'ps': 20, 'sort': 2},
+                                      credential=credential, retry=False)
+        data = payload.get('data') if isinstance(payload, dict) else None
+        if not isinstance(data, dict):
+            return []
+        comments: list[str] = []
+        for key in ('top', 'upper'):
+            comment = data.get(key)
+            if isinstance(comment, dict):
+                text = self._comment_text(comment)
+                if text and text not in comments:
+                    comments.append(text)
+        for reply in (data.get('replies') or []):
+            if isinstance(reply, dict) and reply.get('is_top'):
+                text = self._comment_text(reply)
+                if text and text not in comments:
+                    comments.append(text)
+        return comments[:5]
+
+    @staticmethod
+    def _comment_text(comment: dict) -> str:
+        member = comment.get('member') or {}
+        name = str(member.get('uname') or '').strip()
+        content = re.sub(_MARKUP, ' ', str((comment.get('content') or {}).get('message') or '')).strip()
+        content = re.sub(r'\s+', ' ', content)
+        if not content:
+            return ''
+        return f'{name}：{content}' if name else content
 
     # ----------------------------------------------------------- discovery
     def discover(self, query: DiscoveryQuery, *, credential: Credential | None = None) -> DiscoveryResult:

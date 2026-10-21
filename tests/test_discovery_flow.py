@@ -268,7 +268,7 @@ def test_collect_resumes_from_checkpoint_without_metadata_request(api):
                      {'c': main.js({'remote': checkpoint, 'stage': 'fetch_subtitles'}),
                       'id': imported['job_id']})
     assert worker.tick() is True
-    assert collector.calls == ['fetch_subtitles']
+    assert collector.calls == ['fetch_subtitles', 'fetch_pinned_comments']
     job = api.get('/api/v1/jobs/' + imported['job_id']).json()
     assert job['state'] == 'succeeded'
     assert job['result']['resumed'] is True

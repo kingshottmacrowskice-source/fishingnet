@@ -277,7 +277,7 @@ def test_discover_maps_bad_keyword_and_page_limit():
 
 def test_discover_shares_the_request_budget():
     collector = make(search_handler({'code': 0, 'data': {'result': []}}))
-    for _ in range(4):
+    for _ in range(5):
         collector.discover(DiscoveryQuery(keywords=('AI',)))
     with pytest.raises(CollectorError) as exc:
         collector.discover(DiscoveryQuery(keywords=('AI',)))

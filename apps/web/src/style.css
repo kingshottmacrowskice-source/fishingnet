@@ -63,3 +63,6 @@
 .v1-feed h2 { font-size: 22px; line-height: 1.5; margin: 14px 0; }
 .v1-feed li { line-height: 1.8; margin: 8px 0; }
 .v1-feed .update-card { margin-bottom: 24px; }
+.tile[role=button]{cursor:pointer;transition:border-color .15s ease,box-shadow .15s ease}
+.tile[role=button]:hover,.tile[role=button]:focus-visible{border-color:#27745d;box-shadow:0 6px 18px rgba(39,116,93,.12)}
+.entity-modal{max-height:85vh;overflow-y:auto}

@@ -46,11 +46,21 @@ def entities(user: User):
             AND n.status<>'deleted' AND EXISTS(SELECT 1 FROM summary_entity_history h WHERE h.node_id=n.id)
             ORDER BY n.canonical_name LIMIT 200""", ws=user['workspace_id'])
         for row in rows:
-            row['sources'] = many(conn, """SELECT DISTINCT v.id,v.title,s.canonical_url FROM summary_entity_history h
+            # 视频资源：实体出现过的原始视频/资料（可跳转查看原文）。
+            row['sources'] = many(conn, """SELECT DISTINCT s.id,s.title,s.canonical_url,s.platform
+                FROM summary_entity_history h
                 CROSS JOIN LATERAL jsonb_array_elements_text(h.summary_ids) ids(value)
                 JOIN video_summaries v ON v.id=ids.value::uuid AND v.workspace_id=h.workspace_id
-                JOIN sources s ON s.id=v.source_id WHERE h.workspace_id=:ws AND h.node_id=:id
-                AND s.availability='available'""", ws=user['workspace_id'], id=row['id'])
+                JOIN sources s ON s.id=v.source_id AND s.workspace_id=h.workspace_id
+                WHERE h.workspace_id=:ws AND h.node_id=:id AND s.availability='available'
+                ORDER BY s.title""", ws=user['workspace_id'], id=row['id'])
+            # 信息动态：与实体相关的视频/资料总结（feed 里的动态条目）。
+            row['summaries'] = many(conn, """SELECT DISTINCT v.id,v.title,v.summary,v.created_at
+                FROM summary_entity_history h
+                CROSS JOIN LATERAL jsonb_array_elements_text(h.summary_ids) ids(value)
+                JOIN video_summaries v ON v.id=ids.value::uuid AND v.workspace_id=h.workspace_id
+                WHERE h.workspace_id=:ws AND h.node_id=:id
+                ORDER BY v.created_at DESC, v.id DESC""", ws=user['workspace_id'], id=row['id'])
     return {'items': rows}
 
 
@@ -59,17 +69,12 @@ def digest(user: User, download: bool = False):
     with db().connect() as conn:
         workspace = one(conn, 'SELECT timezone FROM workspace_settings WHERE id=:ws', ws=user['workspace_id'])
         day = datetime.now(ZoneInfo(workspace['timezone'])).date()
-        runs = many(conn, """SELECT * FROM summary_rounds WHERE workspace_id=:ws
-            AND (created_at AT TIME ZONE :tz)::date=:day ORDER BY created_at,id""", ws=user['workspace_id'], tz=workspace['timezone'], day=day)
-    text = '# '+str(day)+' 信息日报\n\n'
-    if not runs:
-        text += '今天还没有运行记录。'
-    for index, run in enumerate(runs, 1):
-        text += f'## 第 {index} 轮\n\n'
-        text += (run['report'] or ('汇总未完成：'+run['error_code'] if run['error_code'] else '正在收集或总结视频。'))+'\n\n'
+        row = one(conn, 'SELECT * FROM daily_digests WHERE workspace_id=:ws AND day=:day',
+                  ws=user['workspace_id'], day=day)
+    text = row['markdown'] if row else f'# {day} 信息日报\n\n今天还没有生成日报。'
     if download:
-        return PlainTextResponse(text, media_type='text/markdown', headers={'Content-Disposition':f'attachment; filename="digest-{day}.md"'})
-    return {'date': str(day), 'markdown': text, 'rounds': runs}
+        return PlainTextResponse(text, media_type='text/markdown', headers={'Content-Disposition': f'attachment; filename="digest-{day}.md"'})
+    return {'date': str(day), 'markdown': text, 'summary': row['summary'] if row else ''}
 
 
 class MonitorInput(BaseModel):
@@ -124,3 +129,29 @@ def retry_round(round_id: uuid.UUID, user: User):
                 execute(conn, "UPDATE jobs SET state='needs_review' WHERE id=:id", id=run['job_id'])
             execute(conn, "UPDATE summary_rounds SET state=:state,error_code=NULL,report='',finished_at=NULL WHERE id=:id", id=round_id, state='collecting' if unfinished else 'queued')
     return {'status':'queued'}
+
+
+# 清空内容时保留这些表（登录 / 平台账号 / 模型配置）。
+# TRUNCATE ... CASCADE 会绕过 immutable_row / prevent_endpoint_delete 等行级触发器，
+# 从而能干净地删除 source_versions / nodes / relations 等带约束的表；CASCADE 只影响
+# 被清空表之间的外键，不会触及上方保留表（保留表不会引用内容表）。
+_CLEAR_CONTENT_TABLES = (
+    'daily_digests', 'summary_entity_history', 'nodes', 'summary_round_items',
+    'summary_rounds', 'video_summaries', 'source_versions', 'sources',
+    'discovery_run_items', 'discovery_runs', 'discovery_sources',
+    'mention_receipts', 'mention_monitors', 'jobs', 'job_attempts',
+    'request_idempotency', 'claim_expression_reviews', 'verification_records',
+    'claims', 'updates', 'relations', 'user_item_states', 'subscriptions',
+    'ai_budget_ledger', 'ai_invocations', 'audit_events', 'feedback',
+)
+
+
+@router.post('/clear-content')
+def clear_content(user: User):
+    """清空信息/实体/日报与自动任务数据，保留登录、账号与模型配置。"""
+    try:
+        with db().begin() as conn:
+            execute(conn, 'TRUNCATE TABLE ' + ', '.join(_CLEAR_CONTENT_TABLES) + ' CASCADE')
+    except Exception as exc:  # noqa: BLE001 - 把本地数据库错误透传给前端以便排查
+        raise HTTPException(500, f'清空失败：{exc}')
+    return {'status': 'ok', 'cleared': len(_CLEAR_CONTENT_TABLES)}

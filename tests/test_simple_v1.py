@@ -27,7 +27,7 @@ def v1(api, monkeypatch):
     def invoke(task, **kwargs):
         calls.append((task,kwargs['messages']))
         value = {'summary':'作者介绍了工具 A 的离线功能及使用限制。','points':['支持离线使用'],
-                 'entities':[{'name':'工具 A','description':'作者介绍的离线工具'}]} if task=='update_generation' else {'text':'根据本轮视频，工具 A 提供离线能力，使用时仍需注意条件。'}
+                 'entities':[{'name':'工具 A','type':'工具','description':'作者介绍的离线工具'}]} if task=='update_generation' else {'text':'根据本轮视频，工具 A 提供离线能力，使用时仍需注意条件。'}
         return {'parsed':value,'invocation_id':str(uuid.uuid4())}
     monkeypatch.setattr(gateway,'invoke_messages',invoke)
     api.model_calls=calls
@@ -216,3 +216,62 @@ def test_summary_failure_does_not_modify_entity(v1,monkeypatch):
     assert v1.get('/api/v1/simple/rounds').json()['items'][0]['state']=='failed'
     assert not v1.get('/api/v1/simple/entities').json()['items']
     assert len(v1.get('/api/v1/simple/feed').json()['items'])==1
+
+
+def test_digest_is_daily_not_per_round(v1):
+    import_text(v1);drain();simple.tick();drain()
+    markdown=v1.get('/api/v1/simple/digest').json()['markdown']
+    assert '今日视频' in markdown and '今日实体' in markdown
+    assert '第 1 轮' not in markdown and '## 第' not in markdown
+
+
+def test_summary_output_drops_vague_entities():
+    value = {'summary': '介绍几个对象。', 'points': ['要点'],
+             'entities': [
+                 {'name': 'DeepSeek', 'type': '技术', 'description': '开源模型'},
+                 {'name': '必剪', 'type': '工具', 'description': '剪辑工具'},
+                 {'name': '作者自用预设', 'type': '其他', 'description': '预设方案'},
+                 {'name': '官方桌面端', 'type': '其他', 'description': '客户端'},
+                 {'name': '必剪模块', 'type': '其他', 'description': '模块'},
+                 {'name': '在校大学生（主角）', 'type': '人物', 'description': '角色'},
+                 {'name': '《莫愁乡》', 'type': '其他', 'description': 'MV'},
+                 {'name': 'patch the planet（修补地球）', 'type': '其他', 'description': '口号'},
+             ]}
+    out = summary_output(value)
+    assert [e['name'] for e in out['entities']] == ['DeepSeek', '必剪']
+
+
+def test_summary_prompt_includes_description_and_pinned_comments(v1):
+    result=import_text(v1)
+    with v1.engine.begin() as conn:
+        execute(conn, 'UPDATE sources SET metadata=metadata || CAST(:meta AS jsonb) WHERE id=:id',
+                id=result['source_ids'][0],
+                meta=simple.js({'desc':'视频简介内容','pinned_comments':['作者：置顶评论内容']}))
+    drain()
+    prompts=''.join(json.dumps(c[1],ensure_ascii=False) for c in v1.model_calls if c[0]=='update_generation')
+    assert '视频简介内容' in prompts
+    assert '置顶评论内容' in prompts
+
+
+def test_entity_type_is_stored_on_node(v1):
+    import_text(v1);drain();simple.tick();drain()
+    entity=v1.get('/api/v1/simple/entities').json()['items'][0]
+    assert entity['metadata']['entity_type']=='工具'
+
+
+def test_near_duplicate_entity_names_are_consolidated(v1,monkeypatch):
+    real=gateway.invoke_messages
+    def invoke(task, **kwargs):
+        system=str(kwargs['messages'][0]['content'])
+        if task=='update_generation':
+            return {'parsed':{'summary':'介绍墨记的离线功能。','points':['离线使用'],
+                    'entities':[{'name':'墨记','type':'产品','description':'笔记软件'},
+                                {'name':'墨记软件','type':'产品','description':'本地优先'}]},
+                    'invocation_id':'a'}
+        if 'groups' in system:
+            return {'parsed':{'groups':[{'name':'墨记','members':['墨记','墨记软件']}]},'invocation_id':'g'}
+        return {'parsed':{'text':'本轮汇总'},'invocation_id':'r'}
+    monkeypatch.setattr(gateway,'invoke_messages',invoke)
+    import_text(v1);drain();simple.tick();drain()
+    entities=v1.get('/api/v1/simple/entities').json()['items']
+    assert len(entities)==1 and entities[0]['canonical_name']=='墨记'

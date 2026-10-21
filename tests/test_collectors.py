@@ -22,7 +22,8 @@ def make(handler, **kwargs):
 
 def view_payload(pages=None):
     return {'code': 0, 'data': {
-        'bvid': BVID, 'title': '合成视频标题', 'owner': {'name': '虚构作者', 'mid': 42},
+        'bvid': BVID, 'aid': 170001, 'title': '合成视频标题', 'owner': {'name': '虚构作者', 'mid': 42},
+        'desc': '这是一段<b>合成简介</b>，说明视频内容与限制。',
         'pubdate': 1700000000, 'duration': 90,
         'pages': pages if pages is not None else [
             {'cid': 111, 'page': 1, 'part': '第一段', 'duration': 90},
@@ -156,11 +157,44 @@ def test_timeout_is_retried_once_within_budget():
 
 def test_request_budget_is_enforced():
     collector = make(lambda request: httpx.Response(200, json={'code': 0, 'data': {}}))
-    for _ in range(4):
+    for _ in range(5):
         collector._request_json('https://api.bilibili.com/x/web-interface/nav')
     with pytest.raises(CollectorError) as exc:
         collector._request_json('https://api.bilibili.com/x/web-interface/nav')
     assert exc.value.code == 'REQUEST_BUDGET_EXCEEDED'
+
+
+def test_fetch_source_keeps_description_and_aid():
+    collector = make(lambda request: httpx.Response(200, json=view_payload()))
+    source = collector.fetch_source(collector.parse_locator(URL))
+    assert source.metadata['desc'] == '这是一段 合成简介 ，说明视频内容与限制。'
+    assert source.metadata['aid'] == 170001
+
+
+def test_fetch_pinned_comments_extracts_top_and_upper():
+    def handler(request):
+        assert 'x/v2/reply' in str(request.url)
+        assert request.url.params['type'] == '1' and request.url.params['oid'] == '170001'
+        return httpx.Response(200, json={'code': 0, 'data': {
+            'top': {'member': {'uname': 'UP主'}, 'content': {'message': '置顶说明：<b>补充</b>了条件'}},
+            'upper': {'member': {'uname': '作者'}, 'content': {'message': '另一条补充'}},
+            'replies': [{'member': {'uname': '路人'}, 'content': {'message': '普通评论'}, 'is_top': False}],
+        }})
+
+    collector = make(handler)
+    locator = collector.parse_locator(URL)
+    comments = collector.fetch_pinned_comments(locator, aid=170001,
+                                               credential=Credential(platform='bilibili', values={'SESSDATA': 'x'}))
+    assert comments == ['UP主：置顶说明： 补充 了条件', '作者：另一条补充']
+
+
+def test_fetch_pinned_comments_without_aid_is_offline():
+    def handler(request):
+        raise AssertionError('must not call the network without an aid')
+
+    collector = make(handler)
+    assert collector.fetch_pinned_comments(collector.parse_locator(URL), aid=None) == []
+    assert collector.requests == 0
 
 
 def test_subtitles_without_credential_are_login_required_and_offline():

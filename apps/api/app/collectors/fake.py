@@ -85,7 +85,8 @@ class FakeBilibiliCollector:
                       'page_count': len(pages),
                       'parts': [{'page_no': p.page_no, 'cid': p.cid, 'part_title': p.part_title,
                                  'duration_seconds': p.duration_seconds} for p in pages],
-                      'video_cid': page.cid, 'synthetic': True, 'subtitle_status': 'unknown'})
+                      'video_cid': page.cid, 'synthetic': True, 'subtitle_status': 'unknown',
+                      'desc': f'{SYNTHETIC_NOTICE}：合成视频简介', 'aid': 0})
 
     def fetch_subtitles(self, locator: Locator, source: RemoteSource,
                         credential: Credential | None = None, *,
@@ -117,6 +118,12 @@ class FakeBilibiliCollector:
             tracks=(SubtitleTrack(language='zh-CN', label='中文（合成）', url='synthetic://caption',
                                   machine=False),),
             detail='测试替身：合成字幕')
+
+    def fetch_pinned_comments(self, locator: Locator, *, aid=None,
+                              credential: Credential | None = None) -> list[str]:
+        self.calls.append('fetch_pinned_comments')
+        self._maybe_fail('fetch_pinned_comments')
+        return []
 
     def discover(self, query: DiscoveryQuery, *, credential: Credential | None = None) -> DiscoveryResult:
         self.calls.append(f'discover:{query.page}')
