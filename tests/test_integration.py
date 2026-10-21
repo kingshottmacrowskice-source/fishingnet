@@ -43,6 +43,9 @@ def initialize(c):
     r=c.post('/api/v1/auth/setup',json={'setup_token':'test-setup','username':'tester','password':'test-password-12345','workspace_name':'测试知识库'})
     assert r.status_code==200,r.text
     c.headers['X-CSRF-Token']=c.cookies['fn_csrf']
+    # These tests target the preserved M1 pipeline, not the default V1 reader.
+    with c.engine.begin() as conn:
+        conn.exec_driver_sql('UPDATE workspace_settings SET simple_mode=false')
 
 
 def test_end_to_end_and_idempotency(client):

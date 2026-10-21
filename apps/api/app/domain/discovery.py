@@ -17,6 +17,7 @@ from __future__ import annotations
 import re
 import unicodedata
 from datetime import datetime, timedelta, timezone
+from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
 MAX_KEYWORDS = 5
 MAX_KEYWORD_LENGTH = 40
@@ -136,7 +137,16 @@ def normalize_config(payload: dict) -> dict:
         pages = []
     elif not pages:
         raise DiscoveryConfigError('target_pages', '选择“指定分P”时至少填写一个分P序号')
+    daily_time = payload.get('daily_time') or None
+    zone = payload.get('schedule_timezone') or 'Asia/Shanghai'
+    if daily_time and (not isinstance(daily_time,str) or not re.fullmatch(r'([01][0-9]|2[0-3]):[0-5][0-9]',daily_time)):
+        raise DiscoveryConfigError('daily_time','每日时间须为 HH:MM')
+    try:
+        ZoneInfo(zone)
+    except (ZoneInfoNotFoundError,ValueError,TypeError):
+        raise DiscoveryConfigError('schedule_timezone','无效时区')
     return {
+        'daily_time':daily_time, 'schedule_timezone':zone,
         'platform': platform, 'name': name, 'keywords': list(keywords),
         'exclude_terms': list(terms), 'languages': list(languages),
         'match_mode': match_mode, 'language_policy': language_policy,
@@ -239,6 +249,18 @@ def next_run_after(now: datetime, interval_minutes: int, failure_streak: int = 0
     return now + timedelta(seconds=delay)
 
 
+def next_configured_run(now: datetime, config: dict, failure_streak: int = 0):
+    if not config.get('daily_time') or failure_streak:
+        return next_run_after(now,config['schedule_interval_minutes'],failure_streak)
+    zone = ZoneInfo(config.get('schedule_timezone') or 'Asia/Shanghai')
+    hour, minute = map(int,config['daily_time'].split(':'))
+    local = now.astimezone(zone)
+    candidate = local.replace(hour=hour,minute=minute,second=0,microsecond=0)
+    if candidate <= local:
+        candidate += timedelta(days=1)
+    return candidate.astimezone(timezone.utc)
+
+
 def plan_candidates(items, config: dict, *, existing: dict, now: datetime) -> list[dict]:
     """Decide what to do with each candidate.
 
@@ -296,12 +318,15 @@ def plan_candidates(items, config: dict, *, existing: dict, now: datetime) -> li
         -(entry['published_at'].timestamp() if entry['published_at'] else 0),
         entry['external_id']))
     limit = int(config.get('max_results_per_run') or 10)
+    selected = 0
     for index, entry in enumerate(matched):
-        if index >= limit:
+        source = existing.get(entry['external_id'])
+        if config.get('_simple_mode') and source and source.get('has_summary'):
+            entry.update(decision='duplicate',reason='该视频已经总结，直接跳过')
+        elif (selected if config.get('_simple_mode') else index) >= limit:
             entry.update(decision='over_limit',
                          reason=f'超过每轮上限（{limit} 条），未入队')
         else:
-            source = existing.get(entry['external_id'])
             if source and source.get('availability') == 'deleted':
                 entry.update(decision='skipped_deleted', reason='该来源已被删除，不会重新导入')
             elif source and (source.get('content_status') == 'pending'
@@ -316,6 +341,8 @@ def plan_candidates(items, config: dict, *, existing: dict, now: datetime) -> li
                              source_id=source.get('id'))
             else:
                 entry.update(decision='enqueued', reason='新来源，已排队采集')
+            if entry['decision'] in ('enqueued','refreshed'):
+                selected += 1
         if entry['external_id'] in seen:
             continue
         seen.add(entry['external_id'])

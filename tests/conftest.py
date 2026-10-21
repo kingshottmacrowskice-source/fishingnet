@@ -62,6 +62,10 @@ def initialize(client):
         'password': 'test-password-12345', 'workspace_name': '测试知识库'})
     assert response.status_code == 200, response.text
     client.headers['X-CSRF-Token'] = client.cookies['fn_csrf']
+    # Existing M1-M4 tests deliberately exercise the retained advanced pipeline.
+    # V1 tests explicitly turn on the new product mode (the deployment default).
+    with client.engine.begin() as conn:
+        conn.exec_driver_sql('UPDATE workspace_settings SET simple_mode=false')
 
 
 @pytest.fixture

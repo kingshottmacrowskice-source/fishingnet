@@ -23,7 +23,7 @@ from __future__ import annotations
 import os
 from datetime import datetime, timezone
 
-from app.domain.discovery import next_run_after
+from app.domain.discovery import next_configured_run
 from app.storage.db import engine, many, one, execute
 
 DEFAULT_TICK_SECONDS = 30.0
@@ -74,8 +74,7 @@ def enqueue_run(conn, source: dict, now: datetime, trigger: str = 'schedule') ->
             jid=job['id'], rid=run['id'])
     execute(conn, """UPDATE discovery_sources SET next_run_at=:next,last_run_at=:now,
         updated_at=now() WHERE id=:id""",
-            next=next_run_after(now, source['schedule_interval_minutes'],
-                                source['failure_streak']), now=now, id=source['id'])
+            next=next_configured_run(now, source, source['failure_streak']), now=now, id=source['id'])
     run['job_id'] = job['id']
     return run
 

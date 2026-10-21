@@ -452,6 +452,14 @@ def import_url_source(conn,body,ws,key):
     if source and source['availability']=='deleted':
         raise ApiError(409,'SOURCE_DELETED','该来源已被删除，不能重新导入同一链接',False)
     existed=bool(source)
+    if source:
+        from app.jobs import simple
+        if simple.enabled(conn, ws):
+            prior_summary = simple.existing(conn, ws, source)
+            if prior_summary:
+                return {'source_ids':[str(source['id'])], 'job_id':None, 'existed':True,
+                        'summary_id':str(prior_summary['id']), 'collection':'already_summarized',
+                        'note':'该视频已总结，直接复用已有动态。'}
     if not source:
         source=one(conn,'''INSERT INTO sources(workspace_id,platform,external_id,source_kind,title,canonical_url,
             availability,content_status,rights_policy,metadata)
@@ -813,6 +821,8 @@ class DiscoverySourceInput(BaseModel):
     max_requests_per_run:int=3
     rescan_after_hours:int=168
     schedule_interval_minutes:int=1440
+    daily_time:str|None=Field(default=None,pattern=r'^([01][0-9]|2[0-3]):[0-5][0-9]$')
+    schedule_timezone:str='Asia/Shanghai'
     enabled:bool=False
     network_authorized:bool=False
 
@@ -829,6 +839,7 @@ def discovery_view(row):
                   'max_requests_per_run':row['max_requests_per_run'],
                   'rescan_after_hours':row['rescan_after_hours']},
         'schedule_interval_minutes':row['schedule_interval_minutes'],
+        'daily_time':row.get('daily_time'),'schedule_timezone':row.get('schedule_timezone','Asia/Shanghai'),
         'enabled':row['enabled'],'network_authorized':row['network_authorized'],
         'next_run_at':row['next_run_at'],'last_run_at':row['last_run_at'],
         'last_success_at':row['last_success_at'],'last_error_code':row['last_error_code'],
@@ -876,6 +887,14 @@ def discovery_sources(user:User):
             'note':'关键词来源只产生来源与采集任务，不产生推荐流，也不会自动评论/@/回复。'}
 
 
+def _initial_discovery_time(config):
+    if not config['enabled'] or not config['network_authorized']:
+        return None
+    from app.domain.discovery import next_configured_run
+    now=datetime.now(timezone.utc)
+    return next_configured_run(now,config) if config.get('daily_time') else now
+
+
 @app.post(PREFIX+'/discovery-sources',status_code=201)
 def create_discovery_source(body:DiscoverySourceInput,user:User):
     try:
@@ -893,11 +912,11 @@ def create_discovery_source(body:DiscoverySourceInput,user:User):
         row=one(conn,'''INSERT INTO discovery_sources(workspace_id,platform,name,keywords,exclude_terms,
             languages,match_mode,language_policy,page_policy,target_pages,max_results_per_run,
             max_pages_per_run,max_requests_per_run,rescan_after_hours,schedule_interval_minutes,
-            enabled,network_authorized,next_run_at)
+            enabled,network_authorized,next_run_at,daily_time,schedule_timezone)
             VALUES(:ws,:platform,:name,CAST(:keywords AS jsonb),CAST(:terms AS jsonb),
             CAST(:languages AS jsonb),:match_mode,:language_policy,:page_policy,
             CAST(:pages AS jsonb),:max_results,:max_pages,:max_requests,:rescan,:interval,
-            :enabled,:authorized,CASE WHEN :enabled AND :authorized THEN now() ELSE NULL END)
+            :enabled,:authorized,:next,:daily_time,:schedule_timezone)
             RETURNING *''',
             ws=user['workspace_id'],platform=config['platform'],name=config['name'],
             keywords=js(config['keywords']),terms=js(config['exclude_terms']),
@@ -906,7 +925,8 @@ def create_discovery_source(body:DiscoverySourceInput,user:User):
             pages=js(config['target_pages']),max_results=config['max_results_per_run'],
             max_pages=config['max_pages_per_run'],max_requests=config['max_requests_per_run'],
             rescan=config['rescan_after_hours'],interval=config['schedule_interval_minutes'],
-            enabled=config['enabled'],authorized=config['network_authorized'])
+            enabled=config['enabled'],authorized=config['network_authorized'],daily_time=config['daily_time'],schedule_timezone=config['schedule_timezone'],
+            next=_initial_discovery_time(config))
         execute(conn,"INSERT INTO audit_events(workspace_id,action,object_id) VALUES(:ws,'discovery_source_created',:id)",
                 ws=user['workspace_id'],id=row['id'])
     return discovery_view(row)
@@ -941,9 +961,9 @@ def update_discovery_source(source_id:uuid.UUID,body:DiscoverySourceInput,user:U
         merged={key:row[key] for key in ('name','platform','keywords','exclude_terms','languages',
             'match_mode','language_policy','page_policy','target_pages','max_results_per_run',
             'max_pages_per_run','max_requests_per_run','rescan_after_hours',
-            'schedule_interval_minutes','enabled','network_authorized')}
+            'schedule_interval_minutes','enabled','network_authorized','daily_time','schedule_timezone')}
         merged.update({key:value for key,value in body.model_dump(exclude_unset=True).items()
-                       if value is not None})
+                       if value is not None or key=='daily_time'})
         try:
             config=normalize_config(merged)
         except DiscoveryConfigError as exc:
@@ -958,9 +978,8 @@ def update_discovery_source(source_id:uuid.UUID,body:DiscoverySourceInput,user:U
             target_pages=CAST(:pages AS jsonb),max_results_per_run=:max_results,
             max_pages_per_run=:max_pages,max_requests_per_run=:max_requests,
             rescan_after_hours=:rescan,schedule_interval_minutes=:interval,enabled=:enabled,
-            network_authorized=:authorized,
-            next_run_at=CASE WHEN NOT :enabled OR NOT :authorized THEN NULL
-                WHEN next_run_at IS NULL THEN now() ELSE next_run_at END,
+            network_authorized=:authorized,daily_time=:daily_time,schedule_timezone=:schedule_timezone,
+            next_run_at=:next,
             updated_at=now(),revision=revision+1 WHERE id=:id AND workspace_id=:ws RETURNING *""",
             name=config['name'],keywords=js(config['keywords']),terms=js(config['exclude_terms']),
             languages=js(config['languages']),match_mode=config['match_mode'],
@@ -968,8 +987,8 @@ def update_discovery_source(source_id:uuid.UUID,body:DiscoverySourceInput,user:U
             pages=js(config['target_pages']),max_results=config['max_results_per_run'],
             max_pages=config['max_pages_per_run'],max_requests=config['max_requests_per_run'],
             rescan=config['rescan_after_hours'],interval=config['schedule_interval_minutes'],
-            enabled=config['enabled'],authorized=config['network_authorized'],
-            id=source_id,ws=user['workspace_id'])
+            enabled=config['enabled'],authorized=config['network_authorized'],daily_time=config['daily_time'],schedule_timezone=config['schedule_timezone'],
+            next=_initial_discovery_time(config),id=source_id,ws=user['workspace_id'])
         execute(conn,"INSERT INTO audit_events(workspace_id,action,object_id) VALUES(:ws,'discovery_source_updated',:id)",
                 ws=user['workspace_id'],id=source_id)
     return discovery_view(row)
@@ -3038,6 +3057,9 @@ def _openapi_document():
 
 
 app.openapi = _openapi_document
+
+from app.simple_api import router as simple_router
+app.include_router(simple_router)
 
 
 # A built frontend can also be served directly for a single-origin local deployment.

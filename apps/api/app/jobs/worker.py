@@ -10,7 +10,7 @@ from app.domain.evidence import digest, validate_anchor
 from app.domain.policy import PublicationPolicy, POLICY_VERSION
 from app.domain import verification as verification_engine
 from app.domain.discovery import (
-    merge_watermark, next_run_after, plan_candidates, target_pages,
+    merge_watermark, next_run_after, next_configured_run, plan_candidates, target_pages,
 )
 from app.ai import extraction as ai_extraction
 from app.ai import review as ai_review
@@ -616,8 +616,10 @@ def _existing_sources(ws, items, config):
     if not external_ids:
         return {}
     with engine.connect() as conn:
-        rows = many(conn, """SELECT id,external_id,availability,last_checked_at,content_status
-            FROM sources WHERE workspace_id=:ws AND external_id IN
+        rows = many(conn, """SELECT s.id,s.external_id,s.availability,s.last_checked_at,s.content_status,
+            EXISTS(SELECT 1 FROM video_summaries v WHERE v.workspace_id=s.workspace_id
+                AND v.video_key='bilibili:'||split_part(s.external_id,':',1)) AS has_summary
+            FROM sources s WHERE workspace_id=:ws AND external_id IN
             (SELECT jsonb_array_elements_text(CAST(:ids AS jsonb)))""",
                     ws=ws, ids=js(external_ids))
     return {row['external_id']: row for row in rows}
@@ -630,12 +632,20 @@ def _finish_discovery(job, run, source, state, error_code, *, entries=None, requ
     ws = job['workspace_id']
     failed = state in ('failed', 'blocked_upstream')
     with engine.begin() as conn:
+        from app.jobs import simple
+        simple_round = simple.new_round(conn, ws, 'keywords', run['id']) if simple.enabled(conn, ws) else None
         saved = []
         for entry in entries or ():
             source_row = None
             if entry['decision'] in ('enqueued', 'refreshed'):
                 source_row = _ensure_discovered_source(conn, job, source, entry)
-                _ensure_collect_job(conn, job, source, source_row, entry, run)
+                completed = simple.existing(conn, ws, source_row) if simple_round else None
+                collect_job = None if completed else _ensure_collect_job(conn, job, source, source_row, entry, run)
+                if completed:
+                    entry['decision']='duplicate'
+                    entry['reason']='视频已有总结，跳过'
+                if simple_round and not completed:
+                    simple.add_item(conn, simple_round, source_row, collect_job['id'] if collect_job else None)
                 entry['source_id'] = source_row['id']
                 saved.append(entry)
             execute(conn, '''INSERT INTO discovery_run_items(workspace_id,run_id,external_id,bvid,
@@ -666,7 +676,7 @@ def _finish_discovery(job, run, source, state, error_code, *, entries=None, requ
             next_run_at=:next,last_error_code=:code,failure_streak=:streak,
             updated_at=now(),revision=revision+1 WHERE id=:id AND workspace_id=:ws""",
                 wm=js(watermark), now=now, failed=failed,
-                next=next_run_after(now, source['schedule_interval_minutes'], streak),
+                next=next_configured_run(now, source, streak),
                 code=error_code, streak=streak, id=source['id'], ws=ws)
         execute(conn, """UPDATE discovery_runs SET state=:state,finished_at=:now,
             started_at=COALESCE(started_at,:now),
@@ -812,6 +822,9 @@ def discover(job):
     for page_no in sorted(pages, key=int):
         items.extend(DiscoveryItem.from_checkpoint(value) for value in pages[page_no])
     now = datetime.now(timezone.utc)
+    from app.jobs import simple
+    with engine.connect() as conn:
+        source['_simple_mode'] = simple.enabled(conn,ws)
     entries = plan_candidates(items, source, existing=_existing_sources(ws, items, source), now=now)
     enqueued = sum(1 for entry in entries if entry['decision'] in ('enqueued', 'refreshed'))
     message = (f'关键词发现完成：读取 {len(pages)} 页、{len(items)} 条候选，'
@@ -1047,11 +1060,15 @@ def process(job):
     real material at ``needs_review`` instead of pretending it was analysed.
     """
     ws = job['workspace_id']
+    from app.jobs import simple
     with engine.connect() as conn:
         version = one(conn, """SELECT s.metadata AS metadata,s.availability FROM source_versions v
             JOIN sources s ON s.id=v.source_id WHERE v.id=:id AND v.workspace_id=:ws""",
                       id=job['input']['version_id'], ws=ws)
         model_route = _route_uses_model(conn, ws)
+        simple_mode = simple.enabled(conn, ws)
+    if simple_mode and version and not (version['metadata'] or {}).get('demo'):
+        return simple.summarize(job)
     if (model_route and version and version['availability'] == 'available'
             and not (version['metadata'] or {}).get('demo')):
         return _process_with_model(job)
@@ -1654,6 +1671,12 @@ def tick():
             discover(job)
         elif job['kind'] == 'fact_check':
             fact_check(job)
+        elif job['kind'] == 'summary_round':
+            from app.jobs import simple
+            simple.finish_round(job)
+        elif job['kind'] == 'poll_mentions':
+            from app.jobs import simple
+            simple.poll_mentions(job)
         else:
             process(job)
     except FenceLost:
@@ -1691,6 +1714,8 @@ def tick():
 def run_scheduler_tick(now=None):
     """Enqueue due keyword sources. Imported lazily to keep the queue module thin."""
     from app.jobs import scheduler
+    from app.jobs import simple
+    simple.tick()
     return scheduler.run_due(now)
 
 
@@ -1715,7 +1740,7 @@ def main_loop():
                     print(f'Retention removed {removed} discovery decision row(s).', flush=True)
             except Exception:
                 print('Retention cleanup failed; run ledgers are unchanged.', flush=True)
-        if scheduler.scheduler_enabled() and now - last_scheduled >= interval:
+        if now - last_scheduled >= interval:
             last_scheduled = now
             try:
                 created = run_scheduler_tick()

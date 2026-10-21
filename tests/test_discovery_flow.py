@@ -206,7 +206,8 @@ def test_explicit_page_policy_targets_one_part(api):
     assert source_row['external_id'] == f'{BVID_A}:p2'
     assert source_row['metadata']['page'] == 2
 
-    job = one(api.engine.connect(), "SELECT * FROM jobs WHERE kind='collect_source'")
+    with api.engine.connect() as conn:
+        job = one(conn, "SELECT * FROM jobs WHERE kind='collect_source'")
     assert job['input']['page'] == 2
     assert job['input']['languages'] == ['zh-CN']
     drain(api)

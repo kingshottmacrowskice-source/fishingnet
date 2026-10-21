@@ -57,3 +57,9 @@
 .fact-material small{display:block;margin-top:4px;line-height:1.7}
 .claim-evidence .tile-actions{align-items:center;margin:8px 0}
 .claim-evidence .status-row{padding:8px 0;font-size:11px}
+/* Focused first-version reading surfaces. */
+.v1-feed { max-width: 980px; margin-top: 24px; }
+.v1-summary { white-space: pre-wrap; line-height: 1.85; overflow-wrap: anywhere; }
+.v1-feed h2 { font-size: 22px; line-height: 1.5; margin: 14px 0; }
+.v1-feed li { line-height: 1.8; margin: 8px 0; }
+.v1-feed .update-card { margin-bottom: 24px; }

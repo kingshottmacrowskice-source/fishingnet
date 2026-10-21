@@ -109,6 +109,50 @@ class BilibiliCollector:
             self._client_instance.close()
             self._client_instance = None
 
+    def fetch_mentions(self, *, credential, cursor=None):
+        """One bounded page of account @ notifications, with no mark-read/write calls."""
+        if not credential:
+            raise CollectorError('CREDENTIAL_EXPIRED', '读取 @ 通知需要 B站登录态', False)
+        params = {'platform': 'web', 'build': 0, 'mobi_app': 'web'}
+        cursor = cursor or {}
+        if cursor.get('id'):
+            params['id'] = cursor['id']
+        if cursor.get('time'):
+            params['reply_time'] = cursor['time']
+        payload = self._request_json(f'{API}/x/msgfeed/at', params=params, credential=credential, retry=False)
+        if payload.get('code') != 0:
+            raise self._code_error(payload.get('code'))
+        data = payload.get('data')
+        if not isinstance(data, dict) or not isinstance(data.get('items'), list) or len(data['items']) > 100:
+            raise CollectorError('UPSTREAM_INVALID_JSON', '@ 通知格式异常，已停止本轮', False)
+        if any(not isinstance(item, dict) or not str(item.get('id') or '').isdigit() for item in data['items']):
+            raise CollectorError('UPSTREAM_INVALID_JSON', '@ 通知缺少有效标识', False)
+        return data
+
+    def resolve_mention_video(self, notification, *, credential):
+        from app.domain.summaries import mention_video
+        bvid=mention_video(notification)
+        if bvid:
+            return bvid
+        uri=urlsplit(str((notification.get('item') or {}).get('uri') or ''))
+        match=None
+        if uri.hostname in ('www.bilibili.com','bilibili.com'):
+            match=re.fullmatch(r'/(?:opus|dynamic)/([0-9]+)/?',uri.path)
+        elif uri.hostname=='t.bilibili.com':
+            match=re.fullmatch(r'/([0-9]+)/?',uri.path)
+        if not match:
+            return None
+        response=self._request_json(f'{API}/x/polymer/web-dynamic/v1/detail',params={'id':match.group(1)},credential=credential,retry=False)
+        if response.get('code')!=0:
+            raise self._code_error(response.get('code'))
+        item=(response.get('data') or {}).get('item') or {}
+        for candidate in (item,item.get('orig') or {}):
+            archive=(((candidate.get('modules') or {}).get('module_dynamic') or {}).get('major') or {}).get('archive') or {}
+            bvid=archive.get('bvid')
+            if isinstance(bvid,str) and BV_PATTERN.fullmatch(bvid):
+                return bvid
+        return None
+
     def _request(self, url: str, params=None, *, credential: Credential | None = None,
                  retry: bool = True):
         if self.requests >= MAX_REQUESTS:
