@@ -21,7 +21,9 @@ data = runtime / 'pgdata'
 log_file = runtime / 'postgres.log'
 env_file = root / '.env'
 port = 55432
-ready_timeout = 30
+# Crash recovery after an interrupted shutdown fsyncs the whole data directory and
+# replays WAL; on a slow disk this can take minutes. Do not call that "not ready".
+ready_timeout = 300
 
 
 def tcp_ready(timeout=0.5):
@@ -45,11 +47,29 @@ def process_image(pid):
     try:
         out = subprocess.run(['tasklist', '/FI', f'PID eq {pid}', '/FO', 'CSV', '/NH'],
                              capture_output=True, text=True, timeout=10).stdout.strip()
-        if not out or 'No tasks' in out or '没有运行' in out:
-            return None
-        return out.split('","')[0].strip('"').lower()
+        if out and 'No tasks' not in out and '没有运行' not in out:
+            return out.split('","')[0].strip('"').lower()
     except (OSError, subprocess.SubprocessError):
+        pass
+    # Some restricted sessions cannot start tasklist.exe; the Win32 API still
+    # answers without spawning a process.
+    try:
+        import ctypes
+        from ctypes import wintypes
+        handle = ctypes.windll.kernel32.OpenProcess(0x1000, False, int(pid))
+        if not handle:
+            return None
+        try:
+            buffer = ctypes.create_unicode_buffer(32768)
+            size = wintypes.DWORD(len(buffer))
+            if ctypes.windll.kernel32.QueryFullProcessImageNameW(
+                    handle, 0, buffer, ctypes.byref(size)):
+                return Path(buffer.value).name.lower()
+        finally:
+            ctypes.windll.kernel32.CloseHandle(handle)
+    except Exception:  # noqa: BLE001 - unknown ownership is handled by the caller
         return None
+    return None
 
 
 def is_our_postmaster(pid, recorded_dir):
@@ -133,22 +153,35 @@ def init_data_dir(password):
         handle.write("\nlisten_addresses = '127.0.0.1'\nport = 55432\n")
 
 
-def wait_ready(timeout=ready_timeout):
+def db_ready(password, timeout=2):
+    """SQL-level readiness probe.
+
+    ``pg_isready.exe`` can fail to start under a restricted token / low desktop
+    heap (``0xc0000142``) even when the server is healthy. The application itself
+    connects with psycopg, so use the same client library for the probe.
+    """
+    import psycopg
+    try:
+        with psycopg.connect(host='127.0.0.1', port=port, user='fishingnet',
+                             password=password, dbname='postgres',
+                             connect_timeout=timeout, autocommit=True):
+            return True
+    except Exception:  # noqa: BLE001 - "starting up" / refused / timeout all mean "retry"
+        return False
+
+
+def wait_ready(password, timeout=ready_timeout):
     deadline = time.time() + timeout
+    started = time.time()
+    last_note = -1
     while time.time() < deadline:
-        if tcp_ready():
-            # An open socket also accepts connections during WAL recovery, when
-            # PostgreSQL still rejects SQL clients. Check protocol readiness.
-            try:
-                ready = subprocess.run(
-                    [str(bin_dir / 'pg_isready.exe'), '-h', '127.0.0.1',
-                     '-p', str(port), '-U', 'fishingnet', '-d', 'postgres', '-t', '2'],
-                    capture_output=True, timeout=3)
-                if ready.returncode == 0:
-                    return True
-            except subprocess.TimeoutExpired:
-                pass
-        time.sleep(0.25)
+        if db_ready(password):
+            return True
+        elapsed = int(time.time() - started)
+        if elapsed // 10 > last_note:
+            last_note = elapsed // 10
+            print(f'等待本地 PostgreSQL 完成启动/恢复… {elapsed}s（可能因上次未正常关闭而做崩溃恢复，请不要重复启动或停止）', flush=True)
+        time.sleep(0.5)
     return False
 
 
@@ -181,8 +214,11 @@ def main():
 
     if tcp_ready():
         if is_our_postmaster(pid, recorded_dir):
-            if not wait_ready():
-                raise SystemExit('本地 PostgreSQL 尚未完成启动或恢复；未修改数据库，请稍后再试。')
+            if not wait_ready(password):
+                raise SystemExit(
+                    f'本地 PostgreSQL 在 {ready_timeout} 秒内仍未完成启动/崩溃恢复。\n'
+                    '数据库未被修改；不要删除 pgdata，也不要在恢复期间反复停止/启动。\n'
+                    f'--- postgres.log 末尾 ---\n{log_tail()}')
             ensure_database(password)
             print(f'本地 PostgreSQL 已就绪：127.0.0.1:{port}')
             return
@@ -190,12 +226,18 @@ def main():
             f'端口 {port} 已被其他程序占用，且不是本项目 .runtime\\pgdata 的 PostgreSQL。'
             '未启动或停止任何其他程序；请先释放该端口。')
 
+    if pid and is_our_postmaster(pid, recorded_dir):
+        # The postmaster is ours but has not opened its socket yet (still starting).
+        if wait_ready(password):
+            ensure_database(password)
+            print(f'本地 PostgreSQL 已就绪：127.0.0.1:{port}')
+            return
+        raise SystemExit(
+            f'本项目的 PostgreSQL 进程 (PID {pid}) 存在，但 {ready_timeout} 秒内未接受连接。\n'
+            '请先等待日志出现 "database system is ready to accept connections"；'
+            '若确实卡住，再运行 infra\\stop.ps1。不要删除 pgdata。\n'
+            f'--- postgres.log 末尾 ---\n{log_tail()}')
     if pid:
-        if is_our_postmaster(pid, recorded_dir):
-            raise SystemExit(
-                f'本项目的 PostgreSQL 进程 (PID {pid}) 存在，但未接受连接。'
-                '请运行 infra\\stop.ps1 停止后再启动，不要删除 pgdata。\n'
-                f'--- postgres.log 末尾 ---\n{log_tail()}')
         # A stale postmaster.pid (PID reused by another process) must not block a start.
         (data / 'postmaster.pid').unlink(missing_ok=True)
 
@@ -204,9 +246,10 @@ def main():
     except RuntimeError as exc:
         raise SystemExit(f'PostgreSQL 启动命令失败：{exc}\n--- postgres.log 末尾 ---\n{log_tail()}')
 
-    if not wait_ready():
+    if not wait_ready(password):
         raise SystemExit(
-            f'PostgreSQL 在 {ready_timeout} 秒内未接受连接。\n'
+            f'PostgreSQL 在 {ready_timeout} 秒内未接受连接（可能仍在崩溃恢复）。\n'
+            '数据库未删除；请稍后直接重试启动，不要在恢复期间反复停止/启动。\n'
             f'--- postgres.log 末尾 ---\n{log_tail()}\n'
             '若端口被占用或日志显示权限错误，不要删除 pgdata；请把上面的日志发给开发者。')
 

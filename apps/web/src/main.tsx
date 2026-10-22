@@ -4,6 +4,7 @@ import {QRCodeSVG} from 'qrcode.react'
 import { Activity, ArrowUpRight, BookOpen, Bookmark, Check, ChevronRight, CircleHelp, FileText, FolderOpen, Layers, LogOut, Network, Plus, Search, Settings, ShieldCheck, SlidersHorizontal, Upload, X, RefreshCw, Clock3, Sparkles, UserRound, Wallet, PanelLeftClose } from 'lucide-react'
 import './style.css'
 import {SimpleHome} from './simple'
+import {Modal} from './modal'
 
 type Row = Record<string, any>
 const labels:Row={queued:'排队中',running:'处理中',succeeded:'已完成',needs_review:'待复核',failed:'失败',cancelled:'已取消',retry_wait:'等待重试',cancel_requested:'取消中',blocked_budget:'预算暂停',blocked_credentials:'凭证阻塞',blocked_upstream:'上游受限',insufficient:'证据不足',unchecked:'未核查',current:'当前有效',stale:'已失效',high:'重要',low:'一般',opinion:'观点',factual_assertion:'事实主张',condition:'条件',experience:'条件体验',manual:'手动',schedule:'定时',retry:'重试',enqueued:'已入队',refreshed:'已刷新',excluded_term:'排除词',keyword_miss:'未命中关键词',duplicate:'已采集',over_limit:'超过上限',skipped_deleted:'来源已删除',supports:'语义支持',partially_supports:'部分支持',unsupported:'不支持',unclear:'上下文不足',proposed:'待确认',accepted:'已接受',rejected:'已拒绝',pending:'待复核',corroborated:'得到佐证',conflicted:'存在冲突',refuted:'已被反驳',E0:'E0 不可用',E1:'E1 有限间接',E2:'E2 实质支持',E3:'E3 强支持',rule:'规则',human:'人工',support:'支持',refute:'反驳',context:'背景',direct:'直接',indirect:'间接',unknown:'未知',confirmed:'已确认',shared_origin:'同源转载',verified:'已核验',unverified:'未检查',suspected_manipulation:'疑似篡改',matched:'匹配',mismatched:'不匹配',EVIDENCE_TIER_INSUFFICIENT:'证据等级不足',IMPORTANT_FACT_REQUIRES_E3:'重要事实需 E3',REFUTATION_TIER_INSUFFICIENT:'反证等级不足',CONFLICTING_SUPPORT_PRESENT:'存在强支持材料',DISPUTE_WITHOUT_MATERIAL:'争议缺材料',expression_support:'表达复核',performed:'已执行',not_configured:'未配置',unavailable:'未完成'}
@@ -231,6 +232,7 @@ function NodeDetail({node,reload,onViewFeed,onOpenUpdate,onOpenClaim}:{node:Row,
  </div>
 }
 function PlatformPanel({items,bump}:{items:Row[],bump:()=>void}){
+ const [expandedPlatform,setExpandedPlatform]=useState<string|null>(null)
  const [cookie,setCookie]=useState(''),[alias,setAlias]=useState(''),[busy,setBusy]=useState(false),[error,setError]=useState(''),[notice,setNotice]=useState(''),[check,setCheck]=useState<Row|null>(null)
  const [qr,setQr]=useState<Row|null>(null),[qrBusy,setQrBusy]=useState(false)
  const bili=items.find(x=>x.platform==='bilibili')
@@ -272,6 +274,9 @@ function PlatformPanel({items,bump}:{items:Row[],bump:()=>void}){
  },[qr?.auth_id,qr?.status])
  const checkLabel=check?(stateLabel[check.status]||check.status):''
  return <>
+  <div className="section-caption"><h3>平台账号</h3><span>管理各个平台的登录信息</span></div>
+  <article className="platform-card"><div className="platform-account-head"><div><h4>B站</h4><p className="muted">{stateLabel[conn.status]||'未配置'}</p></div><button className="outline" aria-expanded={expandedPlatform==='bilibili'} aria-controls="bilibili-account" onClick={()=>setExpandedPlatform(expandedPlatform==='bilibili'?null:'bilibili')}>{expandedPlatform==='bilibili'?'收起':'修改'}</button></div>
+  <div id="bilibili-account" hidden={expandedPlatform!=='bilibili'} className="platform-account-body">
   <div className="status-row"><span>B站 连接状态</span><strong>{stateLabel[conn.status]||'未配置'}</strong></div>
   <div className="status-row"><span>凭证</span><strong>{conn.credential_configured?'已加密保存 SESSDATA（不可回读）':'未提供'}</strong></div>
   <div className="status-row"><span>最近检查</span><strong>{conn.last_checked_at?date(conn.last_checked_at):'尚未检查'}</strong></div>
@@ -314,8 +319,8 @@ function PlatformPanel({items,bump}:{items:Row[],bump:()=>void}){
    {error&&<div role="alert" className="error">{error}</div>}
    {notice&&<div role="status" className="notice">{notice}</div>}
   </div>
-  <h4>其他平台</h4>
-  {items.filter(x=>x.platform!=='bilibili').map(p=><div className="status-row" key={p.platform}><span>{p.label}</span><strong>{p.implemented?(p.requirements||[]).join('；'):'仅保留契约，未实现真实采集'}</strong></div>)}
+  </div></article>
+  {items.filter(x=>x.platform!=='bilibili').map(p=><article className="platform-card" key={p.platform}><div className="platform-account-head"><div><h4>{p.label}</h4><p className="muted">{p.implemented?'可配置':'暂未支持'}</p></div><button className="outline" aria-expanded={expandedPlatform===p.platform} aria-controls={'account-'+p.platform} onClick={()=>setExpandedPlatform(expandedPlatform===p.platform?null:p.platform)}>{expandedPlatform===p.platform?'收起':'修改'}</button></div>{expandedPlatform===p.platform&&<div id={'account-'+p.platform} className="platform-account-body"><p className="muted">{p.implemented?(p.requirements||[]).join('；'):'该平台暂未开放账号接入。'}</p></div>}</article>)}
   <p className="small-note">采集结果进入来源库与证据链，不生成视频推荐流；缺字幕、需要登录、风控与失败分别显示，不会伪装成分析成功。</p>
  </>
 }
@@ -453,21 +458,51 @@ function BudgetPanel({settings,reload}:{settings:Row,reload:()=>void}){
   <button className="outline" disabled={busy} onClick={()=>saveBudget()}>{busy?'正在保存…':'保存预算与数据策略'}</button>
  </div>
 }
+// Mirrors the server's ready rule in ai/gateway.route_list so the page can explain
+// exactly which switch is off instead of leaving the status stuck on 未就绪.
+function routeCheck(r:Row,models:Row[]){
+ const byId=new Map<string,Row>(models.map(m=>[String(m.id),m]))
+ const reasons:string[]=[]
+ if(r.mode!=='model'){
+  if(!r.enabled)reasons.push('任务未启用：勾选「启用」后保存')
+  return {ready:!!r.enabled,reasons,
+    note:'当前是 Mock / 规则模式，不调用模型；要测试模型请改为「模型调用」'}
+ }
+ if(!r.enabled)reasons.push('任务未启用：勾选「启用」后保存')
+ if(!r.primary_model_id)reasons.push('未选择主模型')
+ else{
+  const m=byId.get(String(r.primary_model_id))
+  if(!m)reasons.push('主模型已被删除，请重新选择')
+  else{
+   if(!m.enabled)reasons.push('主模型「'+(m.display_name||m.model_id)+'」未启用：到「模型列表」启用')
+   if(!m.provider_enabled)reasons.push('供应商「'+m.provider_name+'」已停用：到「供应商连接」启用')
+  }
+ }
+ for(const id of (r.fallback_model_ids||[])){
+  const m=byId.get(String(id))
+  if(!m)reasons.push('备用模型已被删除，请移除')
+  else if(!m.enabled)reasons.push('备用模型「'+(m.display_name||m.model_id)+'」未启用')
+  else if(!m.provider_enabled)reasons.push('备用模型「'+(m.display_name||m.model_id)+'」的供应商已停用')
+ }
+ return {ready:reasons.length===0,reasons,note:''}
+}
 function ModelsPanel({bump}:{bump:()=>void}){
  const [tab,setTab]=useState<'providers'|'models'|'routes'|'calls'>('providers')
  const [providers,setProviders]=useState<Row[]>([]),[models,setModels]=useState<Row[]>([])
  const [routes,setRoutes]=useState<Row[]>([]),[routeRevision,setRouteRevision]=useState('0')
+ const [savedRoutes,setSavedRoutes]=useState('')
  const [cost,setCost]=useState<Row>({}),[calls,setCalls]=useState<Row[]>([])
  const [busy,setBusy]=useState(false),[error,setError]=useState(''),[notice,setNotice]=useState('')
  const [cloudConfirm,setCloudConfirm]=useState(false)
  const [pf,setPf]=useState({name:'',protocol:'openai_compatible',base_url:'',api_key:'',is_local:false,enabled:false})
  const [mf,setMf]=useState({provider_id:'',model_id:'',display_name:'',tier:'standard',context_window:'8192',max_output_tokens:'1024',input_price_per_mtok:'0',output_price_per_mtok:'0',supports_structured_output:false,enabled:false})
+ const [dialog,setDialog]=useState<'provider'|'model'|null>(null)
   const [editingModel,setEditingModel]=useState<Row|null>(null)
  async function load(){
   setError('')
   try{
    const [p,m,r,c,i]=await Promise.all([api('/model-providers'),api('/models'),api('/task-routes'),api('/costs/summary'),api('/ai/invocations?limit=10')])
-   setProviders(p.items);setModels(m.items);setRoutes(r.items);setRouteRevision(String(r.revision));setCost(c);setCalls(i.items)
+   setProviders(p.items);setModels(m.items);setRoutes(r.items);setSavedRoutes(JSON.stringify(r.items));setRouteRevision(String(r.revision));setCost(c);setCalls(i.items)
    setMf(v=>({...v,provider_id:v.provider_id||(p.items[0]?.id||'')}))
   }catch(e:any){setError(e.message)}
  }
@@ -479,7 +514,7 @@ function ModelsPanel({bump}:{bump:()=>void}){
    const payload:Row={name:pf.name,protocol:pf.protocol,base_url:pf.protocol==='mock'?'':pf.base_url,is_local:pf.protocol==='local'||pf.protocol==='mock'?true:pf.is_local,enabled:pf.enabled}
    if(pf.api_key)payload.api_key=pf.api_key
    await api('/model-providers',{method:'POST',body:JSON.stringify(payload)})
-   setPf(v=>({...v,name:'',base_url:'',api_key:''}))
+   setPf(v=>({...v,name:'',base_url:'',api_key:''}));setDialog(null)
   },'供应商已保存；密钥只加密保存，界面只显示掩码')
  }
  async function toggleProvider(p:Row){await run(()=>api('/model-providers/'+p.id,{method:'PATCH',headers:{'If-Match':String(p.revision)},body:JSON.stringify({enabled:!p.enabled})}),p.enabled?'供应商已停用':'供应商已启用')}
@@ -494,14 +529,14 @@ function ModelsPanel({bump}:{bump:()=>void}){
    }else{
     await api('/models',{method:'POST',body:JSON.stringify({provider_id:mf.provider_id,model_id:mf.model_id,display_name:mf.display_name||mf.model_id,tier:mf.tier,context_window:Number(mf.context_window),max_output_tokens:Number(mf.max_output_tokens),input_price_per_mtok:mf.input_price_per_mtok,output_price_per_mtok:mf.output_price_per_mtok,supports_structured_output:mf.supports_structured_output,enabled:mf.enabled})})
    }
-   setMf(v=>({...v,model_id:'',display_name:''}))
+   setMf(v=>({...v,model_id:'',display_name:''}));setDialog(null)
   },editingModel?'模型已更新；价格/上限/结构化输出改动立即生效':'模型已保存；默认不启用，也不会自动被任务路由使用')
  }
  function startEditModel(m:Row){
-  setEditingModel(m)
+  setEditingModel(m);setError('');setDialog('model')
   setMf({provider_id:String(m.provider_id),model_id:String(m.model_id),display_name:String(m.display_name||''),tier:String(m.tier||'standard'),context_window:String(m.context_window||8192),max_output_tokens:String(m.max_output_tokens||1024),input_price_per_mtok:String(m.input_price_per_mtok??'0'),output_price_per_mtok:String(m.output_price_per_mtok??'0'),supports_structured_output:!!m.supports_structured_output,enabled:!!m.enabled})
  }
- function cancelEditModel(){setEditingModel(null);setMf(v=>({...v,model_id:'',display_name:''}))}
+ function cancelEditModel(){setDialog(null);setError('');setEditingModel(null);setMf(v=>({...v,model_id:'',display_name:''}))}
  async function toggleModel(m:Row){await run(()=>api('/models/'+m.id,{method:'PATCH',headers:{'If-Match':String(m.revision)},body:JSON.stringify({enabled:!m.enabled})}),m.enabled?'模型已停用':'模型已启用')}
  async function deleteModel(m:Row){if(!window.confirm('删除模型「'+m.display_name+'」？被任务路由引用或已有调用账本时会被拒绝。'))return;await run(()=>api('/models/'+m.id,{method:'DELETE',headers:{'If-Match':String(m.revision)}}),'模型已删除')}
  function patchRoute(task:string,patch:Row){setRoutes(list=>list.map(r=>r.task===task?{...r,...patch}:r))}
@@ -509,7 +544,7 @@ function ModelsPanel({bump}:{bump:()=>void}){
   await run(async()=>{
    const payload=routes.map(r=>({task:r.task,mode:r.mode,enabled:r.enabled,primary_model_id:r.primary_model_id||null,fallback_model_ids:(r.fallback_model_ids||[]).slice(0,3),max_input_tokens:Number(r.max_input_tokens),max_output_tokens:Number(r.max_output_tokens),timeout_seconds:Number(r.timeout_seconds),max_attempts:Number(r.max_attempts),data_policy:r.data_policy}))
    const result=await api('/task-routes',{method:'PUT',headers:{'If-Match':routeRevision},body:JSON.stringify({routes:payload,confirm_cloud:cloudConfirm})})
-   setRoutes(result.items);setRouteRevision(String(result.revision))
+   setRoutes(result.items);setSavedRoutes(JSON.stringify(result.items));setRouteRevision(String(result.revision))
   },'任务路由已整组保存；未启用的任务不会调用模型')
  }
  async function testRoute(r:Row){
@@ -517,15 +552,21 @@ function ModelsPanel({bump}:{bump:()=>void}){
   await run(()=>api('/ai/test-call',{method:'POST',body:JSON.stringify({task:r.task,confirm_spend:true})}),(result:Row)=>'测试调用：'+result.status+' · 费用 '+result.cost.status+' '+result.cost.amount+' '+result.cost.currency+' · 结果未写入知识库')
  }
  const enabledModels=models.filter(m=>m.enabled)
+ const routesDirty=!!savedRoutes&&JSON.stringify(routes)!==savedRoutes
+ const budget=cost.budget
+ const budgetTitle=!budget?'正在读取预算…':`每日预算 ${budget.daily_budget} / 每月预算 ${budget.monthly_budget} ${cost.currency||''}`
+ const budgetNote=!budget?'预算尚未读取成功，请稍后重试。':Number(budget.daily_budget)<=0||Number(budget.monthly_budget)<=0?'每日和每月预算均需大于 0，才能进行有费用的模型调用。':`今日剩余 ${budget.day_remaining} / 本月剩余 ${budget.month_remaining} ${cost.currency||''}。`
+ const activeRoutes=routes.filter(r=>['update_generation','digest_polish'].includes(r.task)&&r.mode==='model'&&routeCheck(r,models).ready).length
  return <div className="models-panel">
   <div className="tabs model-tabs">
    {([['providers','供应商连接'],['models','模型列表'],['routes','任务分配'],['calls','调用记录与费用']] as const).map(([id,name])=><button className={tab===id?'active':''} key={id} onClick={()=>setTab(id)}>{name}</button>)}
   </div>
-  {error&&<div role="alert" className="error"><span>{error}</span><button onClick={()=>load()}>重试</button></div>}
+  {error&&!dialog&&<div role="alert" className="error"><span>{error}</span><button onClick={()=>load()}>重试</button></div>}
   {notice&&<div role="status" className="notice">{notice}<button onClick={()=>setNotice('')}><X size={16}/></button></div>}
   {tab==='providers'&&<>
-   <div className="mode-banner"><span className="mode-icon"><SlidersHorizontal size={18}/></span><div><strong>模型调用默认关闭 · 预算为零</strong><p>保存供应商与模型不会发起任何调用。只有配置任务路由、启用模型、设置预算，并在测试或任务中显式触发后才会外发数据；Mock 提供器只返回合成结果。</p></div></div>
-   <form className="discovery-form" onSubmit={createProvider}>
+   <div className="mode-banner"><span className="mode-icon"><SlidersHorizontal size={18}/></span><div><strong>{budgetTitle}</strong><p>{budgetNote}</p><p>模型任务配置就绪：{activeRoutes} / 2。预算不会自动启用模型；请在“任务分配”中选择模型、启用任务，并确认供应商和模型均已启用。使用云端模型还需在预算设置和任务分配中允许云端。保存配置不会立即调用模型。</p></div></div>
+   <div className="section-caption"><h3>供应商连接</h3><button className="primary" onClick={()=>{setError('');setPf({name:'',protocol:'openai_compatible',base_url:'',api_key:'',is_local:false,enabled:false});setDialog('provider')}}><Plus size={16}/>添加供应商</button></div>
+   {dialog==='provider'&&<Modal title="添加供应商" protectChanges busy={busy} onClose={()=>setDialog(null)}>{error&&<div role="alert" className="error modal-error">{error}</div>}   <form className="discovery-form" onSubmit={createProvider}>
     <div className="form-row">
      <label>供应商名称<input required value={pf.name} onChange={e=>setPf({...pf,name:e.target.value})}/></label>
      <label>协议<select value={pf.protocol} onChange={e=>setPf({...pf,protocol:e.target.value,is_local:e.target.value==='local'||e.target.value==='mock'})}><option value="openai">OpenAI 原生（Chat Completions）</option><option value="openai_compatible">OpenAI 兼容端点</option><option value="local">本地兼容端点</option><option value="mock">Mock（仅合成，不联网）</option></select></label>
@@ -533,8 +574,9 @@ function ModelsPanel({bump}:{bump:()=>void}){
     </div>
     <label>API 密钥（只写入，不回显）<input type="password" value={pf.api_key} onChange={e=>setPf({...pf,api_key:e.target.value})} autoComplete="new-password" placeholder="保存后只显示掩码"/></label>
     <label className="check"><input type="checkbox" checked={pf.enabled} onChange={e=>setPf({...pf,enabled:e.target.checked})}/>保存后立即启用该供应商（仍需要模型与任务路由才可能调用）</label>
-    <button className="primary" disabled={busy}>保存供应商</button>
-   </form>
+    <div className="modal-actions"><button className="outline" type="button" disabled={busy} onClick={()=>setDialog(null)}>取消</button><button className="primary" disabled={busy}>{busy?'正在保存…':'保存供应商'}</button></div>
+   </form></Modal>}
+
    <p className="small-note">支持 OpenAI 原生、OpenAI 兼容与本地兼容端点；Anthropic/Gemini 原生协议未实现。协议或端点变更会把状态重置为“未测试”。</p>
    {providers.length===0?<Empty title="尚未配置模型供应商" text="没有供应商时系统保持 Mock 模式，不产生任何模型费用。"/>:providers.map(p=><article className="discovery-card" key={p.id}>
     <div className="section-caption"><h4>{p.name}</h4><span className={p.status==='ok'?'tag green':'tag amber'}>{p.status_label}</span></div>
@@ -549,7 +591,9 @@ function ModelsPanel({bump}:{bump:()=>void}){
    </article>)}
   </>}
   {tab==='models'&&<>
-   <form className="discovery-form" onSubmit={createModel}>
+   <div className="section-caption"><h3>模型列表</h3><button className="primary" disabled={!providers.length} onClick={()=>{setError('');setEditingModel(null);setMf({provider_id:providers[0]?.id||'',model_id:'',display_name:'',tier:'standard',context_window:'8192',max_output_tokens:'1024',input_price_per_mtok:'0',output_price_per_mtok:'0',supports_structured_output:false,enabled:false});setDialog('model')}}><Plus size={16}/>添加模型</button></div>
+   {!providers.length&&<p className="muted">请先在“供应商连接”中添加供应商，再添加模型。</p>}
+   {dialog==='model'&&<Modal title={editingModel?'编辑模型':'添加模型'} protectChanges busy={busy} onClose={cancelEditModel}>{error&&<div role="alert" className="error modal-error">{error}</div>}   <form className="discovery-form" onSubmit={createModel}>
     <div className="form-row">
      <label>供应商<select value={mf.provider_id} disabled={!!editingModel} onChange={e=>setMf({...mf,provider_id:e.target.value})} required>{providers.map(p=><option key={p.id} value={p.id}>{p.name}</option>)}</select></label>
      <label>真实模型 ID<input required value={mf.model_id} disabled={!!editingModel} onChange={e=>setMf({...mf,model_id:e.target.value})} placeholder="gpt-4.1-mini / 自建模型名"/></label>
@@ -567,7 +611,8 @@ function ModelsPanel({bump}:{bump:()=>void}){
     </div>
     <label className="check"><input type="checkbox" checked={mf.enabled} onChange={e=>setMf({...mf,enabled:e.target.checked})}/>保存后启用（不会自动加入任何任务路由）</label>
     <div className="tile-actions">{editingModel?<><button className="primary" disabled={busy}>{busy?'正在保存…':'保存修改'}</button><button className="outline" type="button" disabled={busy} onClick={cancelEditModel}>取消编辑</button></>:<button className="primary" disabled={busy||!providers.length}>保存模型</button>}</div>
-   </form>
+   </form></Modal>}
+
    {editingModel&&<p className="small-note">正在编辑「{editingModel.display_name||editingModel.model_id}」：真实模型 ID 与供应商不可改（已有调用账本时模型也只能停用、不能删除）。</p>}
    <p className="small-note">价格只用于本地费用估算；系统不会从供应商拉取价格，也不会自动切换计价版本。</p>
    {models.length===0?<Empty title="尚未添加模型" text="添加真实模型 ID 后才能配置任务路由；Mock 提供器的模型也不会产生真实分析。"/>:models.map(m=><div className="discovery-card" key={m.id}>
@@ -580,17 +625,21 @@ function ModelsPanel({bump}:{bump:()=>void}){
    </div>)}
   </>}
   {tab==='routes'&&<>
-   <p className="small-note">第一版只需配置两项任务：视频总结、每轮汇总与实体更新。两项均选择“模型”模式并启用；可以使用同一个模型。长视频分段处理，建议输入上限至少 16000 token、输出上限至少 2000 token。费用仍受日/月预算控制。</p>
-   {routes.filter(r=>['update_generation','digest_polish'].includes(r.task)).map(r=><div className="model-route" key={r.task}>
+   <p className="small-note">第一版只需配置两项任务：视频总结、每轮汇总与实体更新。两项均选择“模型调用”模式并勾选「启用」；可以使用同一个模型。长视频分段处理，建议输入上限至少 16000 token、输出上限至少 2000 token。费用仍受日/月预算控制。<strong>供应商、模型默认都是停用状态</strong>，需先在各自页签启用；修改后必须点底部「保存全部任务路由」才会生效。</p>
+   {routesDirty&&<p className="small-note">有未保存的修改：先点底部「保存全部任务路由」，状态与「测试调用」才会按新配置更新。</p>}
+   {!enabledModels.length&&<p className="small-note">没有已启用的模型：供应商和模型默认停用，请先到「供应商连接」「模型列表」逐项启用。</p>}
+   {routes.filter(r=>['update_generation','digest_polish'].includes(r.task)).map(r=>{const check=routeCheck(r,models);return <div className="model-route" key={r.task}>
     <div className="route-head">
      <strong>{r.task==='update_generation'?'视频总结':r.task==='digest_polish'?'每轮汇总与实体更新':r.label}</strong>
-     <span className={r.ready?'tag green':'tag amber'}>{r.ready?'就绪':(r.configured?'未就绪':'未配置')}</span>
+     <span className={check.ready?'tag green':'tag amber'}>{check.ready?(routesDirty?'就绪（待保存）':'就绪'):(r.configured?'未就绪':'未配置')}</span>
      <label className="check"><input type="checkbox" checked={!!r.enabled} onChange={e=>patchRoute(r.task,{enabled:e.target.checked})}/>启用</label>
      <select value={r.mode} onChange={e=>patchRoute(r.task,{mode:e.target.value})}><option value="mock">Mock / 不调用模型</option><option value="rule">规则（不调用模型）</option><option value="model">模型调用</option></select>
-     <button className="outline" type="button" disabled={busy||!r.ready} onClick={()=>testRoute(r)}>测试调用</button>
+     <button className="outline" type="button" disabled={busy||routesDirty||!check.ready||r.mode!=='model'}
+       title={routesDirty?'有未保存修改，请先保存':r.mode!=='model'?'只有「模型调用」模式可以测试调用':'发送一条合成测试提示，可能产生真实费用'}
+       onClick={()=>testRoute(r)}>测试调用</button>
     </div>
     {r.mode==='model'&&<div className="route-grid">
-     <label>主模型<select value={r.primary_model_id||''} onChange={e=>patchRoute(r.task,{primary_model_id:e.target.value||null})}><option value="">未选择</option>{enabledModels.map(m=><option key={m.id} value={m.id}>{m.display_name}（{m.provider_name}）</option>)}</select></label>
+     <label>主模型<select value={r.primary_model_id||''} onChange={e=>patchRoute(r.task,{primary_model_id:e.target.value||null,fallback_model_ids:((r.fallback_model_ids||[]) as string[]).filter((id:string)=>String(id)!==e.target.value)})}><option value="">未选择</option>{enabledModels.map(m=><option key={m.id} value={m.id}>{m.display_name}（{m.provider_name}）</option>)}</select></label>
      <label>备用模型（可多选，最多 3 个）<select multiple value={r.fallback_model_ids||[]} onChange={e=>patchRoute(r.task,{fallback_model_ids:Array.from(e.target.selectedOptions).map(o=>o.value).slice(0,3)})}>{enabledModels.filter(m=>String(m.id)!==String(r.primary_model_id)).map(m=><option key={m.id} value={m.id}>{m.display_name}</option>)}</select></label>
      <label>输入上限（token）<input type="number" min="1" value={r.max_input_tokens} onChange={e=>patchRoute(r.task,{max_input_tokens:e.target.value})}/></label>
      <label>输出上限（token）<input type="number" min="1" value={r.max_output_tokens} onChange={e=>patchRoute(r.task,{max_output_tokens:e.target.value})}/></label>
@@ -598,10 +647,12 @@ function ModelsPanel({bump}:{bump:()=>void}){
      <label>尝试次数<input type="number" min="1" max="3" value={r.max_attempts} onChange={e=>patchRoute(r.task,{max_attempts:e.target.value})}/></label>
      <label>数据策略<select value={r.data_policy} onChange={e=>patchRoute(r.task,{data_policy:e.target.value})}><option value="local_only">仅本地</option><option value="approved_cloud">允许云端</option></select></label>
     </div>}
+    {check.reasons.length>0&&<small className="muted">未就绪原因：{check.reasons.join('；')}。</small>}
+    {check.note&&<small className="muted">{check.note}</small>}
     {r.primary_model_label&&<small className="muted">当前：{r.primary_model_label}{(r.fallback_model_labels||[]).length?' · 备用 '+r.fallback_model_labels.join('、'):''}</small>}
-   </div>)}
+   </div>})}
    <label className="check"><input type="checkbox" checked={cloudConfirm} onChange={e=>setCloudConfirm(e.target.checked)}/>我确认：所选路由若包含云端模型，材料（含合成测试文本）会发送给该供应商；费用按 token 用量估算</label>
-   <div className="tile-actions"><button className="primary" disabled={busy} onClick={saveRoutes}>{busy?'正在保存…':'保存全部任务路由'}</button><button className="outline" disabled={busy} onClick={()=>load()}>放弃修改并刷新</button></div>
+   <div className="tile-actions"><button className="primary" disabled={busy} onClick={saveRoutes}>{busy?'正在保存…':(routesDirty?'保存全部任务路由（有未保存修改）':'保存全部任务路由')}</button><button className="outline" disabled={busy} onClick={()=>load()}>放弃修改并刷新</button></div>
   </>}
   {tab==='calls'&&<>
    <div className="stats model-stats">

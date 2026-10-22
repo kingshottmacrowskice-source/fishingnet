@@ -2,6 +2,23 @@
 
 > 本文件集中存放各里程碑的**详细开发与验收记录**（时间倒序）。主文档只保留当前状态与使用说明，详细历史在此归档，避免主文档膨胀。所有历史结论以“当时的验证为准”，不代表当前状态；当前状态见 `README.md` 与 `CODEX交接文档.md`。
 
+## 2026-10-22（UTC+8）· PostgreSQL 崩溃恢复的启动等待修复
+
+- **现象**：10:50–10:52 连续停止/启动后，PostgreSQL 进入崩溃恢复（同步整个数据目录约 60s + WAL redo 约 71s），直到 **10:54:54** 才输出 `database system is ready to accept connections`；`infra/init-local.py` 固定等待 **30s** 就退出，日志里大量 `FATAL: the database system is starting up` 被误读为权限/端口故障。**数据库没有损坏，未删除 pgdata。**
+- **`pg_isready.exe` 无法启动（0xc0000142）**：本机/受限令牌下该探针二进制加载失败，导致旧的就绪检测既不能确认“已就绪”也不能区分“仍在恢复”。已改为用 **psycopg 连接 `postgres` 库执行 SQL 级探测**（与 API 使用同一客户端库），不再依赖 `pg_isready.exe`。
+- **修复**：`ready_timeout` 30→**300s**；等待期间每 10s 打印进度并提示“崩溃恢复可能需要几分钟，不要反复停止/启动”；PostgreSQL 进程存在但未监听时先等待而不是立即报错；超时信息附带 `postgres.log` 末尾。
+- **验证**：恢复完成后 psycopg 连接成功：`fishingnet` 库 **15 nodes / 20 summary_entity_history links**，`pg_is_in_recovery()=false`；`tcp_ready()`、`db_ready()`、`wait_ready()` 均返回 True。
+- **恢复方式**：数据库已就绪时只需再运行一次 **`启动FishingNet.cmd`**（不要先停止、不要重复点击）；等控制台出现“FishingNet 已就绪”再打开 http://127.0.0.1:5173 。若再次失败，把 `.runtime/postgres.log` 末尾和启动窗口输出一起发回。
+
+## 2026-10-22（UTC+8）· V1 实体隐藏 / 删除与信息动态链接清理
+
+- **保守自动隐藏**：`app/domain/summaries.py` 新增 `should_auto_hide_entity`。只对 `组织/机构/平台/人物` 生效；实体名（或 `entity_key` 去后缀后的规范名）没有出现在**关联视频（含历史轮次）的标题或简介**中时，节点 `metadata.hidden_by='auto'`。产品/工具/技术/其他永不自动隐藏。手动恢复会写 `no_auto_hide=true`，后续轮次不再自动隐藏；手动隐藏优先于自动规则。
+- **实体 API（`app/simple_api.py`）**：`GET /simple/entities?include_hidden=` 返回 `hidden`/`hidden_by`/`hidden_count`；`PATCH /simple/entities/{id}` 手动隐藏/恢复；`DELETE /simple/entities/{id}` 删除 `summary_entity_history` 里该实体的全部链接（信息动态本身保留），并清理 `relations`/`subscriptions`，节点以 `status='deleted'` 墓碑保留，后续轮次按 `summary_entity_key` 跳过、不会重建。
+- **日报同步**：`simple.refresh_daily_digest_entities` 在隐藏/删除后用**已存摘要 + 当天视频 + 可见实体**重算 markdown，不额外调用模型；`rebuild_daily_digest` 与实体列表都排除隐藏实体。
+- **前端**：实体页增加“显示已隐藏（N）”；卡片对隐藏实体使用虚线样式并标注“自动隐藏/已隐藏”；实体详情增加隐藏/恢复与删除（二次确认，提示会清链接）。
+- **验证**：`pytest -q` **418 passed / 99 warnings（65.79s）**（新增 4 项：纯函数规则、自动隐藏/手动隐藏/恢复/删除链接、历史标题保护、日报实体段不含隐藏实体）；`tsc` 通过；OpenAPI **78 路径 / 0.12.0**（`docs/openapi.json` 重导出）。顺带修正 `test_full_round_one_summary_entity_and_digest` 中把来源 ID 与总结 ID 比较的错误断言（改为 `source_id`）。
+- **未验证**：真实模型抽取的实体类型/标题简介是否与自动隐藏规则吻合仍需烟测；删除墓碑只对同一 `summary_entity_key` 生效，改名后的同一对象可能重新出现。
+
 ## 2026-10-22（UTC+8）· V1 实体收口 + 总结上下文（视频简介 + 置顶评论）+ 日报按天合并
 
 - **实体收口（不具体的实体不再出现）**：模型抽取的实体新增 `type`（产品/工具/人物/组织/机构/平台/技术/其他）；服务端在 `summary_output` 里增加**确定性模糊实体过滤**（`_is_vague_entity`），按名称丢弃：长度 >20、含括号角色描述（“在校大学生（主角）”）、书名号/方括号标题（“《莫愁乡》”）、以“模块/插件/预设/方案/桌面端/作者/用户/学生/主角”等后缀结尾、以及“软件/工具/系统/概念”等泛化词本身。提示词同步给出正反例。每轮汇总时增加一次 `digest_polish` 合并近似重名（“墨记” vs “墨记软件”），并把 `entity_type` 写入节点 metadata。

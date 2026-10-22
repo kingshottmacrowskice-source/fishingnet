@@ -55,6 +55,44 @@ def _is_vague_entity(name):
     return name.endswith(_VAGUE_SUFFIXES)
 
 
+# Auto-hide policy for the focused V1 entity list. Context-only organisations,
+# institutions, platforms and people are noise when the video never introduces
+# them in its title or description; products/tools/technology are always kept.
+AUTO_HIDE_ENTITY_TYPES = frozenset(('组织', '机构', '平台', '人物'))
+
+
+def _contains_name(text, name):
+    """Substring match for CJK, word-boundary match for ASCII names."""
+    if not name:
+        return False
+    if re.fullmatch(r'[\x00-\x7f]+', name):
+        return re.search(r'(?<![a-z0-9])' + re.escape(name) + r'(?![a-z0-9])', text) is not None
+    return name in text
+
+
+def entity_introduced_by_texts(name, texts):
+    """True when the entity name (or its de-duplicated form) appears in a video
+    title or description. Those texts are the only signals the video itself gives
+    about what it is introducing."""
+    normalized = unicodedata.normalize('NFKC', name or '').casefold().strip()
+    key = entity_key(name) if name else ''
+    for value in texts:
+        folded = unicodedata.normalize('NFKC', str(value or '')).casefold()
+        if not folded:
+            continue
+        if _contains_name(folded, normalized):
+            return True
+        if key and key != normalized and _contains_name(folded, key):
+            return True
+    return False
+
+
+def should_auto_hide_entity(name, entity_type, texts):
+    """Conservative rule requested for V1: only context-like types are hidden, and
+    only when none of the associated videos names them in title/description."""
+    return entity_type in AUTO_HIDE_ENTITY_TYPES and not entity_introduced_by_texts(name, texts)
+
+
 def entity_key(name):
     """Normalise a name for de-duplication, stripping one trailing entity-type
     suffix (e.g. ``墨记软件`` vs ``墨记``) so the same object is not split."""

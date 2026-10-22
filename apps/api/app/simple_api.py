@@ -1,6 +1,7 @@
 """Reading surfaces for the focused first version."""
+import json
 import uuid
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Annotated
 from zoneinfo import ZoneInfo
 from fastapi import APIRouter, Depends, HTTPException
@@ -39,13 +40,26 @@ def rounds(user: User):
     return {'items': rows}
 
 
+def _hidden_by(row):
+    return (row.get('metadata') or {}).get('hidden_by')
+
+
 @router.get('/entities')
-def entities(user: User):
+def entities(user: User, include_hidden: bool = False):
+    ws = user['workspace_id']
+    items = []
     with db().connect() as conn:
         rows = many(conn, """SELECT n.* FROM nodes n WHERE n.workspace_id=:ws AND n.node_kind='entity'
             AND n.status<>'deleted' AND EXISTS(SELECT 1 FROM summary_entity_history h WHERE h.node_id=n.id)
-            ORDER BY n.canonical_name LIMIT 200""", ws=user['workspace_id'])
+            ORDER BY (n.metadata ? 'hidden_by'), n.canonical_name LIMIT 200""", ws=ws)
+        hidden_count = one(conn, """SELECT count(*) AS n FROM nodes n WHERE n.workspace_id=:ws
+            AND n.node_kind='entity' AND n.status<>'deleted' AND n.metadata ? 'hidden_by'
+            AND EXISTS(SELECT 1 FROM summary_entity_history h WHERE h.node_id=n.id)""", ws=ws)['n']
         for row in rows:
+            row['hidden_by'] = _hidden_by(row)
+            row['hidden'] = bool(row['hidden_by'])
+            if row['hidden'] and not include_hidden:
+                continue
             # 视频资源：实体出现过的原始视频/资料（可跳转查看原文）。
             row['sources'] = many(conn, """SELECT DISTINCT s.id,s.title,s.canonical_url,s.platform
                 FROM summary_entity_history h
@@ -53,15 +67,78 @@ def entities(user: User):
                 JOIN video_summaries v ON v.id=ids.value::uuid AND v.workspace_id=h.workspace_id
                 JOIN sources s ON s.id=v.source_id AND s.workspace_id=h.workspace_id
                 WHERE h.workspace_id=:ws AND h.node_id=:id AND s.availability='available'
-                ORDER BY s.title""", ws=user['workspace_id'], id=row['id'])
+                ORDER BY s.title""", ws=ws, id=row['id'])
             # 信息动态：与实体相关的视频/资料总结（feed 里的动态条目）。
             row['summaries'] = many(conn, """SELECT DISTINCT v.id,v.title,v.summary,v.created_at
                 FROM summary_entity_history h
                 CROSS JOIN LATERAL jsonb_array_elements_text(h.summary_ids) ids(value)
                 JOIN video_summaries v ON v.id=ids.value::uuid AND v.workspace_id=h.workspace_id
                 WHERE h.workspace_id=:ws AND h.node_id=:id
-                ORDER BY v.created_at DESC, v.id DESC""", ws=user['workspace_id'], id=row['id'])
-    return {'items': rows}
+                ORDER BY v.created_at DESC, v.id DESC""", ws=ws, id=row['id'])
+            items.append(row)
+    return {'items': items, 'hidden_count': int(hidden_count or 0)}
+
+
+class EntityVisibility(BaseModel):
+    hidden: bool
+
+
+@router.patch('/entities/{entity_id}')
+def set_entity_hidden(entity_id: uuid.UUID, body: EntityVisibility, user: User):
+    """Manual hide is reversible; unhiding opts the entity out of auto-hide."""
+    ws = user['workspace_id']
+    with db().begin() as conn:
+        row = one(conn, """SELECT * FROM nodes WHERE id=:id AND workspace_id=:ws
+            AND node_kind='entity' AND status<>'deleted' FOR UPDATE""", id=entity_id, ws=ws)
+        if not row:
+            raise HTTPException(404, '实体不存在或已删除')
+        meta = dict(row.get('metadata') or {})
+        if body.hidden:
+            meta['hidden_by'] = 'manual'
+            meta['hidden_at'] = datetime.now(timezone.utc).isoformat()
+            meta.pop('no_auto_hide', None)
+        else:
+            meta.pop('hidden_by', None)
+            meta.pop('hidden_at', None)
+            meta['no_auto_hide'] = True
+        execute(conn, 'UPDATE nodes SET metadata=CAST(:meta AS jsonb),revision=revision+1 WHERE id=:id',
+                meta=json.dumps(meta, ensure_ascii=False), id=entity_id)
+        try:
+            simple.refresh_daily_digest_entities(conn, ws)
+        except Exception:  # noqa: BLE001 - digest refresh must not block hiding
+            pass
+    return {'ok': True, 'hidden': body.hidden}
+
+
+@router.delete('/entities/{entity_id}')
+def delete_entity(entity_id: uuid.UUID, user: User):
+    """Delete one entity and every link between it and information updates.
+
+    The videos/summaries themselves are kept: only ``summary_entity_history`` links
+    (and any advanced-mode ``about`` relation) disappear. The node is tombstoned so
+    a later round cannot recreate an entity the user removed on purpose.
+    """
+    ws = user['workspace_id']
+    with db().begin() as conn:
+        row = one(conn, """SELECT * FROM nodes WHERE id=:id AND workspace_id=:ws
+            AND node_kind='entity' AND status<>'deleted' FOR UPDATE""", id=entity_id, ws=ws)
+        if not row:
+            return {'ok': True, 'already_deleted': True, 'removed_links': 0}
+        removed = execute(conn, 'DELETE FROM summary_entity_history WHERE workspace_id=:ws AND node_id=:id',
+                          ws=ws, id=entity_id).rowcount or 0
+        # Advanced mode links an update to an entity with an ``about`` relation.
+        execute(conn, """DELETE FROM relations WHERE workspace_id=:ws
+            AND ((from_type='node' AND from_id=:id) OR (to_type='node' AND to_id=:id))""", ws=ws, id=entity_id)
+        execute(conn, 'DELETE FROM subscriptions WHERE workspace_id=:ws AND node_id=:id', ws=ws, id=entity_id)
+        meta = dict(row.get('metadata') or {})
+        meta['deleted_at'] = datetime.now(timezone.utc).isoformat()
+        execute(conn, "UPDATE nodes SET status='deleted',metadata=CAST(:meta AS jsonb),revision=revision+1 WHERE id=:id",
+                meta=json.dumps(meta, ensure_ascii=False), id=entity_id)
+        try:
+            simple.refresh_daily_digest_entities(conn, ws)
+        except Exception:  # noqa: BLE001 - digest refresh must not block deletion
+            pass
+    return {'ok': True, 'removed_links': int(removed)}
 
 
 @router.get('/digest')

@@ -3,7 +3,7 @@
   "info": {
     "title": "FishingNet",
     "description": "本地单用户信息聚合 API。统一错误格式为 {\"error\":{\"code\",\"message\",\"retryable\",\"details\"},\"request_id\"}，并在 X-Request-Id 响应头返回同一编号。列表使用不透明 cursor，非法游标返回 400；资源修改必须携带 If-Match 数字版本，缺失返回 428，过期返回 409；导入等异步写入必须携带 Idempotency-Key，同键不同内容返回 409。所有数据限定当前工作区，事实结论受服务端发布门槛约束，来源引用的存在不代表事实为真。关键词来源必须显式在本机授权联网后才可能发起请求；真实关键词发现尚未完成烟测。模型调用默认关闭且预算为零：必须先配置供应商、模型、任务路由并设置预算，显式测试才会发起真实请求；mock 提供器只返回合成结果。",
-    "version": "0.11.0"
+    "version": "0.12.0"
   },
   "paths": {
     "/api/v1/health/live": {
@@ -3608,12 +3608,120 @@
       "get": {
         "summary": "Entities",
         "operationId": "entities_api_v1_simple_entities_get",
+        "parameters": [
+          {
+            "name": "include_hidden",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "default": false,
+              "title": "Include Hidden"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "Successful Response",
             "content": {
               "application/json": {
                 "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/simple/entities/{entity_id}": {
+      "patch": {
+        "summary": "Set Entity Hidden",
+        "description": "Manual hide is reversible; unhiding opts the entity out of auto-hide.",
+        "operationId": "set_entity_hidden_api_v1_simple_entities__entity_id__patch",
+        "parameters": [
+          {
+            "name": "entity_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Entity Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EntityVisibility"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "summary": "Delete Entity",
+        "description": "Delete one entity and every link between it and information updates.\n\nThe videos/summaries themselves are kept: only ``summary_entity_history`` links\n(and any advanced-mode ``about`` relation) disappear. The node is tombstoned so\na later round cannot recreate an entity the user removed on purpose.",
+        "operationId": "delete_entity_api_v1_simple_entities__entity_id__delete",
+        "parameters": [
+          {
+            "name": "entity_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Entity Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
               }
             }
           }
@@ -3740,6 +3848,23 @@
                 "schema": {
                   "$ref": "#/components/schemas/HTTPValidationError"
                 }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/simple/clear-content": {
+      "post": {
+        "summary": "Clear Content",
+        "description": "清空信息/实体/日报与自动任务数据，保留登录、账号与模型配置。",
+        "operationId": "clear_content_api_v1_simple_clear_content_post",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
               }
             }
           }
@@ -3970,6 +4095,19 @@
           "name"
         ],
         "title": "DiscoverySourceInput"
+      },
+      "EntityVisibility": {
+        "properties": {
+          "hidden": {
+            "type": "boolean",
+            "title": "Hidden"
+          }
+        },
+        "type": "object",
+        "required": [
+          "hidden"
+        ],
+        "title": "EntityVisibility"
       },
       "EvidenceLinkInput": {
         "properties": {

@@ -6,7 +6,7 @@ from datetime import datetime, timezone
 from zoneinfo import ZoneInfo
 
 from app.storage.db import one, many, execute
-from app.domain.summaries import video_key, chunks, messages, summary_output, entity_key, mention_video, context_text
+from app.domain.summaries import video_key, chunks, messages, summary_output, entity_key, mention_video, context_text, should_auto_hide_entity
 from app.ai import gateway
 
 
@@ -160,6 +160,7 @@ def summarize(job):
 
 def round_items(conn, ws, rid):
     return many(conn, """SELECT i.*,s.title,s.availability,v.id AS summary_id,v.summary,v.points,v.entities,
+        s.metadata->>'desc' AS source_description,
         c.state AS collect_state,c.error_code AS collect_error,p.id AS process_job_id,p.state AS process_state,p.error_code AS process_error
         FROM summary_round_items i JOIN sources s ON s.id=i.source_id
         LEFT JOIN video_summaries v ON v.workspace_id=i.workspace_id AND v.video_key=i.video_key
@@ -309,6 +310,7 @@ def rebuild_daily_digest(job):
         entities = many(conn, """SELECT DISTINCT n.canonical_name, n.description,
             n.metadata->>'entity_type' AS entity_type FROM summary_entity_history h
             JOIN nodes n ON n.id=h.node_id WHERE h.workspace_id=:ws AND n.status<>'deleted'
+            AND COALESCE(n.metadata->>'hidden_by','')=''
             AND (h.created_at AT TIME ZONE :tz)::date=:day ORDER BY n.canonical_name""", ws=ws, tz=tz, day=day)
     with w.LeaseKeeper(w.engine, job) as keeper:
         summary = _synthesize_daily_summary(job, videos)
@@ -324,6 +326,33 @@ def rebuild_daily_digest(job):
             ws=ws, day=day, summary=summary, markdown=markdown, count=len(videos))
 
 
+def refresh_daily_digest_entities(conn, ws):
+    """Keep today's stored digest in sync after a hide/delete, without a model call.
+
+    The digest text is built from the stored daily summary plus today's videos and
+    visible entities, so hiding one entity must not leave it in the markdown.
+    Returns True when a digest row existed and was refreshed.
+    """
+    tz = one(conn, 'SELECT timezone FROM workspace_settings WHERE id=:ws', ws=ws)['timezone']
+    day = datetime.now(ZoneInfo(tz)).date()
+    digest = one(conn, 'SELECT * FROM daily_digests WHERE workspace_id=:ws AND day=:day', ws=ws, day=day)
+    if not digest:
+        return False
+    videos = many(conn, """SELECT v.title,v.summary,v.points FROM video_summaries v
+        JOIN sources s ON s.id=v.source_id WHERE v.workspace_id=:ws
+        AND (v.created_at AT TIME ZONE :tz)::date=:day AND s.availability='available'
+        ORDER BY v.created_at, v.id""", ws=ws, tz=tz, day=day)
+    entities = many(conn, """SELECT DISTINCT n.canonical_name, n.description,
+        n.metadata->>'entity_type' AS entity_type FROM summary_entity_history h
+        JOIN nodes n ON n.id=h.node_id WHERE h.workspace_id=:ws AND n.status<>'deleted'
+        AND COALESCE(n.metadata->>'hidden_by','')=''
+        AND (h.created_at AT TIME ZONE :tz)::date=:day ORDER BY n.canonical_name""", ws=ws, tz=tz, day=day)
+    markdown = _build_daily_markdown(day, digest['summary'], videos, entities)
+    execute(conn, 'UPDATE daily_digests SET markdown=:markdown, updated_at=now() WHERE workspace_id=:ws AND day=:day',
+            markdown=markdown, ws=ws, day=day)
+    return True
+
+
 def finish_round(job):
     w, ws, rid = worker(), job['workspace_id'], job['input']['round_id']
     with w.engine.connect() as conn:
@@ -331,6 +360,23 @@ def finish_round(job):
         discovery = one(conn,'SELECT * FROM discovery_runs WHERE id=:id AND workspace_id=:ws',id=run['discovery_run_id'],ws=ws) if run and run['discovery_run_id'] else None
         items = round_items(conn, ws, rid)
         current = many(conn, "SELECT id,canonical_name,description FROM nodes WHERE workspace_id=:ws AND node_kind='entity' AND status<>'deleted' ORDER BY canonical_name", ws=ws)
+        # Deleted entities are tombstones: a later round must not silently recreate
+        # something the user explicitly removed.
+        tombstones = {row['key'] for row in many(conn, """SELECT metadata->>'summary_entity_key' AS key
+            FROM nodes WHERE workspace_id=:ws AND node_kind='entity' AND status='deleted'""", ws=ws)
+                      if row['key']}
+        # Titles/descriptions already attached to each entity, so a later round cannot
+        # auto-hide an entity that an *earlier* video introduced in its title.
+        history_texts = {}
+        if current:
+            for row in many(conn, """SELECT h.node_id, v.title, s.metadata->>'desc' AS description
+                FROM summary_entity_history h
+                CROSS JOIN LATERAL jsonb_array_elements_text(h.summary_ids) ids(value)
+                JOIN video_summaries v ON v.id=ids.value::uuid AND v.workspace_id=h.workspace_id
+                JOIN sources s ON s.id=v.source_id AND s.workspace_id=h.workspace_id
+                WHERE h.workspace_id=:ws AND h.node_id=ANY(CAST(:ids AS uuid[]))""",
+                    ws=ws, ids=[str(node['id']) for node in current]):
+                history_texts.setdefault(str(row['node_id']), []).extend([row['title'], row['description']])
     if not run:
         w._finish(job, 'failed', {'message':'本轮不存在'}, 'ROUND_NOT_FOUND')
         return
@@ -383,7 +429,22 @@ def finish_round(job):
                 entry = merged.setdefault(entity_key(name), {'name': name, 'type': entity['type'], 'observations': [], 'ids': []})
                 entry['observations'].extend(entity['observations'])
                 entry['ids'].extend(entity['ids'])
+            merged = {key: entity for key, entity in merged.items() if key not in tombstones}
             known = {entity_key(n['canonical_name']): n for n in current}
+            by_summary = {str(item['summary_id']): item for item in good}
+
+            def _auto_hide(entity, previous):
+                texts = []
+                for summary_id in dict.fromkeys(entity['ids']):
+                    item = by_summary.get(str(summary_id))
+                    if item:
+                        texts.append(item.get('title') or '')
+                        texts.append(item.get('source_description') or '')
+                if previous:
+                    texts.extend(history_texts.get(str(previous['id']), []))
+                return should_auto_hide_entity(entity['name'], entity['type'], texts)
+
+            auto_hidden = {key: _auto_hide(entity, known.get(key)) for key, entity in merged.items()}
             changes = []
             for key, entity in merged.items():
                 previous = known.get(key)
@@ -403,6 +464,7 @@ def finish_round(job):
             report = '关键词发现未完成：'+str(discovery['error_code'] or discovery['state'])+'\n\n'+str(discovery['detail'] or '')
         with w.engine.begin() as conn:
             _guard(conn, job)
+            hidden_at = datetime.now(timezone.utc).isoformat()
             for key, entity, previous, text in changes:
                 execute(conn, 'SELECT pg_advisory_xact_lock(hashtextextended(:key,0))', key=str(ws)+':entity:'+key)
                 node = one(conn, "SELECT * FROM nodes WHERE workspace_id=:ws AND metadata->>'summary_entity_key'=:key AND status<>'deleted'", ws=ws, key=key)
@@ -412,12 +474,29 @@ def finish_round(job):
                     # Never overwrite an overview that changed during model I/O.
                     if previous and node.get('description') != previous.get('description'):
                         raise ValueError('ENTITY_CHANGED_RETRY_ROUND')
-                    execute(conn, 'UPDATE nodes SET description=:text,revision=revision+1 WHERE id=:id', text=text, id=node['id'])
+                    meta = dict(node.get('metadata') or {})
+                    if meta.get('hidden_by') == 'manual':
+                        hidden_by = 'manual'          # user's decision always wins
+                    elif auto_hidden.get(key) and not meta.get('no_auto_hide'):
+                        hidden_by = 'auto'
+                    else:
+                        hidden_by = None
+                    if hidden_by:
+                        meta['hidden_by'] = hidden_by
+                        meta['hidden_at'] = meta.get('hidden_at') or hidden_at
+                    else:
+                        meta.pop('hidden_by', None)
+                        meta.pop('hidden_at', None)
+                    execute(conn, 'UPDATE nodes SET description=:text,metadata=CAST(:meta AS jsonb),revision=revision+1 WHERE id=:id',
+                            text=text, meta=js(meta), id=node['id'])
                 else:
+                    meta = {'summary_entity_key': key, 'entity_type': entity.get('type', '其他'), 'source': 'summary'}
+                    if auto_hidden.get(key):
+                        meta['hidden_by'] = 'auto'
+                        meta['hidden_at'] = hidden_at
                     node = one(conn, """INSERT INTO nodes(workspace_id,node_kind,canonical_name,description,status,metadata)
                         VALUES(:ws,'entity',:name,:text,'active',CAST(:meta AS jsonb)) RETURNING *""",
-                        ws=ws, name=entity['name'], text=text,
-                        meta=js({'summary_entity_key': key, 'entity_type': entity.get('type', '其他'), 'source': 'summary'}))
+                        ws=ws, name=entity['name'], text=text, meta=js(meta))
                 execute(conn, """INSERT INTO summary_entity_history(workspace_id,round_id,node_id,description,summary_ids)
                     VALUES(:ws,:rid,:nid,:text,CAST(:ids AS jsonb)) ON CONFLICT(round_id,node_id) DO NOTHING""",
                     ws=ws, rid=rid, nid=node['id'], text=text, ids=js(entity['ids']))

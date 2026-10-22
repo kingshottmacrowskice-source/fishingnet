@@ -24,6 +24,7 @@
 - 页面无法连接：先运行 `infra\launch.ps1 -NoBrowser` 查看阶段错误；检查 `.runtime/api.error.log`、`.runtime/web.error.log`；确认8000/5173未被其他应用占用。启动脚本不会停止占用端口的其他程序。
 - 任务未运行：确认 worker PID 记录与 `.runtime/worker.log`；队列页面只显示脱敏错误类名。过期租约与尝试次数耗尽会记录为可解释状态。
 - 数据库连接失败：检查 `.runtime/postgres.log`，确认55432可用；不要删除pgdata来“修复”。PostgreSQL不能以管理员令牌运行，`init-local.py` 会在提升shell下用基本用户信任级别启动；若日志出现共享内存 `Permission denied`，先停止再按此方式重启，而不是改pgdata。
+- 启动时报 `FATAL: the database system is starting up`：这是上次未正常关闭后的崩溃恢复，日志会先 `syncing data directory (fsync)` 再 `redo in progress`，本机可能持续 2–5 分钟；`init-local.py` 现在等待 300 秒并每 10 秒打印进度。**不要在恢复期间反复停止/启动**，等出现 `database system is ready to accept connections` 后只启动一次。若 `pg_isready.exe` 报 `0xc0000142`，不影响判断：就绪探测已改用 psycopg 连接 `postgres` 库。
 - 双击启动：重复打开会复用归属匹配的进程；停止请用 `停止FishingNet.cmd` 或 `infra\stop.ps1`，它们只结束命令、项目路径和启动时间匹配的进程树。
 - 初始化口令：在本地 `.env` 中读取SETUP_TOKEN。已有管理员时初始化接口始终返回409；不要为了“重新设置”删除数据库或重置正式账号。
 - 忘记管理员密码：当前尚未交付安全恢复工具，不通过前端或仅用户名重置；后续补一次性部署端恢复流程。

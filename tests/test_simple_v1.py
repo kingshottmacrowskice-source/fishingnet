@@ -9,7 +9,7 @@ from app.collectors import register
 from app.collectors.bilibili import BilibiliCollector
 from app.collectors.base import Credential
 from app.collectors.fake import FakeBilibiliCollector
-from app.domain.summaries import chunks, video_key, summary_output, mention_video
+from app.domain.summaries import chunks, video_key, summary_output, mention_video, should_auto_hide_entity
 from app.storage.db import one, many, execute
 from test_m3_ai_flow import create_provider, create_model, route_payload, save_routes
 from test_discovery_flow import create, request_run, items
@@ -41,9 +41,9 @@ def drain():
     pytest.fail('queue failed to drain')
 
 
-def import_text(api, content='工具 A 支持离线使用，但需先安装。'):
+def import_text(api, content='工具 A 支持离线使用，但需先安装。', title='合成视频资料'):
     r=api.post('/api/v1/sources/import',headers={'Idempotency-Key':uuid.uuid4().hex},json={
-        'title':'合成视频资料','content':content,'format':'text','rights_confirmed':True})
+        'title':title,'content':content,'format':'text','rights_confirmed':True})
     assert r.status_code==202,r.text
     return r.json()
 
@@ -56,7 +56,7 @@ def test_full_round_one_summary_entity_and_digest(v1):
     feed=v1.get('/api/v1/simple/feed').json()['items']
     assert len(feed)==1 and feed[0]['points']==['支持离线使用']
     entities=v1.get('/api/v1/simple/entities').json()['items']
-    assert len(entities)==1 and entities[0]['sources'][0]['id']==feed[0]['id']
+    assert len(entities)==1 and entities[0]['sources'][0]['id']==feed[0]['source_id']
     assert '工具 A' in v1.get('/api/v1/simple/digest').json()['markdown']
     runs=v1.get('/api/v1/simple/rounds').json()['items']
     assert runs[0]['state']=='succeeded'
@@ -275,3 +275,73 @@ def test_near_duplicate_entity_names_are_consolidated(v1,monkeypatch):
     import_text(v1);drain();simple.tick();drain()
     entities=v1.get('/api/v1/simple/entities').json()['items']
     assert len(entities)==1 and entities[0]['canonical_name']=='墨记'
+
+
+def test_auto_hide_only_context_types_absent_from_video_intro():
+    # Context-like types: hidden only when no associated title/description names them.
+    assert should_auto_hide_entity('某某大学','机构',['工具 A 使用介绍','作者介绍工具 A']) is True
+    assert should_auto_hide_entity('某某大学','机构',['某某大学发布新模型']) is False
+    assert should_auto_hide_entity('某某大学','机构',['某某大学','工具 A']) is False
+    assert should_auto_hide_entity('英伟达','组织',['视频简介：英伟达 GPU 供货']) is False
+    assert should_auto_hide_entity('张三','人物',['对张三的访谈']) is False
+    # Products/tools/technology are never auto-hidden.
+    assert should_auto_hide_entity('工具 A','工具',['与本视频无关']) is False
+    # De-duplicated form (entity_key strips a product suffix) still counts as introduced.
+    assert should_auto_hide_entity('墨记软件','人物',['墨记的作者']) is False
+
+
+def test_entity_auto_hide_manual_hide_and_delete_links(v1,monkeypatch):
+    monkeypatch.setattr(gateway,'invoke_messages',lambda task,**kwargs: {
+        'parsed': ({'summary':'介绍工具 A 与某某大学的合作。','points':['要点'],
+                    'entities':[{'name':'工具 A','type':'工具','description':'离线工具'},
+                                {'name':'某某大学','type':'机构','description':'合作机构'}]}
+                   if task=='update_generation' else {'text':'本轮汇总'}),
+        'invocation_id':'x'})
+    result=import_text(v1,'工具 A 与某某大学合作。');drain();simple.tick();drain()
+    assert len(v1.get('/api/v1/simple/feed').json()['items'])==1
+
+    listing=v1.get('/api/v1/simple/entities?include_hidden=1').json()
+    by_name={e['canonical_name']:e for e in listing['items']}
+    assert listing['hidden_count']==1
+    assert by_name['某某大学']['hidden'] is True and by_name['某某大学']['hidden_by']=='auto'
+    assert by_name['工具 A']['hidden'] is False
+    visible=v1.get('/api/v1/simple/entities').json()['items']
+    assert [e['canonical_name'] for e in visible]==['工具 A']
+    # Hidden entities never leak into the daily digest's entity section.
+    digest_markdown=v1.get('/api/v1/simple/digest').json()['markdown']
+    assert '某某大学' not in digest_markdown.split('## 今日实体',1)[1]
+
+    entity_id=by_name['某某大学']['id']
+    assert v1.patch('/api/v1/simple/entities/'+entity_id,json={'hidden':False}).status_code==200
+    after=v1.get('/api/v1/simple/entities').json()['items']
+    assert '某某大学' in [e['canonical_name'] for e in after]
+    assert '某某大学' in v1.get('/api/v1/simple/digest').json()['markdown'].split('## 今日实体',1)[1]
+    # Manual hide works too, and is reversible.
+    assert v1.patch('/api/v1/simple/entities/'+entity_id,json={'hidden':True}).status_code==200
+    assert '某某大学' not in [e['canonical_name'] for e in v1.get('/api/v1/simple/entities').json()['items']]
+    assert '某某大学' not in v1.get('/api/v1/simple/digest').json()['markdown'].split('## 今日实体',1)[1]
+
+    deleted=v1.delete('/api/v1/simple/entities/'+entity_id)
+    assert deleted.status_code==200 and deleted.json()['removed_links']>=1
+    assert '某某大学' not in [e['canonical_name'] for e in
+                              v1.get('/api/v1/simple/entities?include_hidden=1').json()['items']]
+    with v1.engine.connect() as conn:
+        assert one(conn,'SELECT count(*) AS n FROM summary_entity_history WHERE node_id=:id',id=entity_id)['n']==0
+        assert one(conn,'SELECT status FROM nodes WHERE id=:id',id=entity_id)['status']=='deleted'
+    # The information update itself is kept; only the link was removed.
+    assert len(v1.get('/api/v1/simple/feed').json()['items'])==1
+    assert v1.get('/api/v1/simple/entities?include_hidden=1').json()['hidden_count']==0
+
+
+def test_auto_hide_respects_a_title_from_an_earlier_round(v1,monkeypatch):
+    monkeypatch.setattr(gateway,'invoke_messages',lambda task,**kwargs: {
+        'parsed': ({'summary':'介绍某某大学的进展。','points':['要点'],
+                    'entities':[{'name':'某某大学','type':'机构','description':'合作机构'},
+                                {'name':'工具 A','type':'工具','description':'离线工具'}]}
+                   if task=='update_generation' else {'text':'本轮汇总'}),
+        'invocation_id':'x'})
+    import_text(v1,'第一轮内容','某某大学发布新模型');drain();simple.tick();drain()
+    assert '某某大学' in [e['canonical_name'] for e in v1.get('/api/v1/simple/entities').json()['items']]
+    # The second video never names it, but the first video's title already introduced it.
+    import_text(v1,'第二轮内容','工具 A 更新');drain();simple.tick();drain()
+    assert '某某大学' in [e['canonical_name'] for e in v1.get('/api/v1/simple/entities').json()['items']]

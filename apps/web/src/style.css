@@ -66,3 +66,44 @@
 .tile[role=button]{cursor:pointer;transition:border-color .15s ease,box-shadow .15s ease}
 .tile[role=button]:hover,.tile[role=button]:focus-visible{border-color:#27745d;box-shadow:0 6px 18px rgba(39,116,93,.12)}
 .entity-modal{max-height:85vh;overflow-y:auto}
+
+/* Settings dialogs and account disclosure. */
+.app-modal{padding:0;border:1px solid #e1e8e1;color:inherit;width:min(720px,calc(100vw - 32px));max-height:calc(100dvh - 48px);margin:auto;overscroll-behavior:contain}
+.app-modal::backdrop{background:#14291f66;backdrop-filter:blur(4px)}
+.app-modal .drawer-head{padding:20px 26px}
+.app-modal .drawer-head button{padding:8px;border-radius:8px;background:#f3f6f3}
+.app-modal .discovery-form{max-width:none;margin:0;padding:10px 26px 26px}
+.app-modal .form-row{grid-template-columns:repeat(2,minmax(0,1fr));gap:0 18px}
+.app-modal label input:not([type=checkbox]),.app-modal select{width:100%;margin-top:8px;min-height:40px}
+.modal-actions{display:flex;justify-content:flex-end;gap:10px;margin-top:24px}
+.modal-error{margin:18px 26px 0}
+.platform-card{border:1px solid #e1e8e1;background:#fff;border-radius:12px;margin:16px 0;overflow:hidden}
+.platform-account-head{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:20px 24px}
+.platform-account-head h4{margin:0 0 8px;font-size:15px}
+.platform-account-head p{margin:0}
+.platform-account-body{padding:0 24px 24px;border-top:1px solid #e8ede8}
+.entity-modal{width:min(960px,calc(100vw - 32px))}
+.entity-hero{display:flex;align-items:center;gap:18px;padding:28px 30px;background:linear-gradient(120deg,#edf5ef,#fafcf9);border-bottom:1px solid #e3ece5}
+.entity-emblem{display:grid;place-items:center;width:60px;height:60px;flex-shrink:0;background:white;color:#34775a;border:1px solid #dce8df;border-radius:18px}
+.entity-hero h2{font-size:25px;margin:0 0 10px;overflow-wrap:anywhere}
+.entity-hero .eyebrow{margin-bottom:8px}
+.entity-content{padding:26px 30px}
+.entity-content h3{font-size:14px;margin:0 0 16px;display:flex;align-items:center;gap:8px}
+.entity-overview{margin-bottom:28px}
+.entity-overview p{font-size:13px;color:#5f7265;margin:0}
+.entity-columns{display:grid;grid-template-columns:minmax(0,1.6fr) minmax(0,1fr);gap:26px}
+.entity-update,.entity-source{border:1px solid #e3eae4;border-radius:10px;padding:18px;margin-bottom:12px;background:#fcfdfb;overflow-wrap:anywhere}
+.entity-update h4{font-size:14px;line-height:1.6;margin:0 0 10px}
+.entity-update p{font-size:12px;margin:0;color:#6a7b6f}
+.entity-source a{display:flex;align-items:flex-start;gap:8px;font-size:12px;line-height:1.8;margin-top:8px;color:#34775a}
+.entity-source a svg{flex-shrink:0;margin-top:4px}
+.entity-empty{border:1px dashed #dce5dd;border-radius:10px;padding:24px 16px;font-size:12px;color:#87988b;text-align:center}
+.entities-toolbar{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:16px;flex-wrap:wrap}
+.entities-toolbar .outline{padding:7px 11px;font-size:11px}
+.tile.is-hidden{border-style:dashed;background:#fbfbfa}
+.tile.is-hidden .v1-summary{opacity:.8}
+.tile h2 .tag{margin-left:6px}
+.entity-actions{display:flex;gap:10px;justify-content:flex-end;margin:0 0 18px;flex-wrap:wrap}
+.entity-actions .danger{color:#a35d42;border:1px solid #efd3c8;background:#fff8f5;border-radius:6px;padding:9px 13px;font-size:11px}
+.entity-actions .danger:hover{background:#fff1ec}
+@media(max-width:700px){.app-modal .form-row,.entity-columns{grid-template-columns:1fr}.entity-hero{padding:22px 20px}.entity-content{padding:22px 20px}.entity-hero h2{font-size:21px}.platform-account-head{padding:18px}.platform-account-body{padding:0 18px 18px}}

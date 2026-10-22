@@ -34,7 +34,7 @@ from app.collectors import CollectorError, credential_for, get_collector
 from app.jobs.worker import RISK_COOLDOWN_SECONDS, discovery_item_retention_days, js
 
 app = FastAPI(
-    title='FishingNet', version='0.11.0', docs_url='/api/docs',
+    title='FishingNet', version='0.12.0', docs_url='/api/docs',
     description=('本地单用户信息聚合 API。统一错误格式为 '
                  '{"error":{"code","message","retryable","details"},"request_id"}，并在 X-Request-Id 响应头返回同一编号。'
                  '列表使用不透明 cursor，非法游标返回 400；资源修改必须携带 If-Match 数字版本，缺失返回 428，过期返回 409；'

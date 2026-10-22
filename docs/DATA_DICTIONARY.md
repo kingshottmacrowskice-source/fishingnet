@@ -7,11 +7,13 @@
 | sources | 独立来源身份；平台+外部ID唯一；当前版本复合外键验证归属；手动新导入生成UUID，指定source_id才更新已有文档 |
 | source_versions | 只追加；段落/字幕片段JSONB、原始/规范化哈希、版本号、30天保留截止；禁止原地修改 |
 | claims | 来源表达的主张；按版本+指纹幂等；validated必须有origin版本的accepted表达引用；事实状态与抽取分离 |
-| nodes | entity/topic；名字不全局唯一；合成Plugin X使用明确fixture标识识别，不推广为按名称合并 |
+| nodes | entity/topic；名字不全局唯一；`status='deleted'` 是删除墓碑（后续轮次不会重建同名规范实体）；`metadata.hidden_by` 为 `auto`（标题/简介未出现的组织/机构/平台/人物）或 `manual`（用户隐藏），`no_auto_hide=true` 表示用户手动恢复后不再自动隐藏；合成Plugin X使用明确fixture标识识别，不推广为按名称合并 |
 | relations | 多态关系；PostgreSQL约束触发器验证端点、同工作区、类型矩阵、节点子类型、无环及表达锚点；删除端点时阻止悬空引用 |
 | updates | event_key幂等；新增表达引用增加revision；首次发布时间保留；正文包含主张/证据/核查ID；追加修订快照 |
 
 支撑表：workspace_settings、users、auth_sessions、verification_records、jobs、job_attempts、request_idempotency、subscriptions、user_item_states、feedback、audit_events、platform_connections、discovery_sources、discovery_runs、discovery_run_items、provider_connections、model_profiles、task_routes、ai_invocations、ai_budget_ledger、claim_expression_reviews。
+
+`summary_entity_history`（0009）：实体与“信息动态”（`video_summaries`）的链接表，按 `(round_id,node_id)` 唯一，`summary_ids` 保存该轮关联的视频总结 ID。删除实体时先删除这里的链接行，`video_summaries` 本身保留；隐藏实体保留链接，只是在实体列表/日报中不展示。
 
 `platform_connections`（0003，0005 扩展）：每个工作区每个平台最多一行；`credential_sealed` 保存由部署主密钥派生的 Fernet 密文（只含 SESSDATA），`status` 为 unconfigured/unverified/connected/expired/invalid/unavailable/risk_control，`capabilities` 是采集能力快照，`last_checked_at` 只由用户手动检查写入，`last_success_at` 记录最近一次成功采集阶段（不代表平台授权），`cooldown_until` 是本地风控冷却截止（不是平台解封承诺）。过期凭证与风控只能由用户重新提供凭证或等待冷却后显式“恢复”，不会自动重试。`sources.last_checked_at` 记录最近一次元数据/字幕检查时间；`sources.content_status` 区分 pending/ready/missing/permission_required/failed，缺字幕与需要登录不得互相冒充。
 
