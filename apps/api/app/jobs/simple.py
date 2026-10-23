@@ -64,8 +64,9 @@ def _call(job, task, prompt):
         return cached[key]
     result = gateway.invoke_messages(task, workspace_id=job['workspace_id'], job_id=job['id'],
                                      messages=prompt, summary={'input_kind': 'video_summary'})
-    cached[key] = {'parsed':result['parsed'], 'invocation_id':result['invocation_id']}
-    worker()._checkpoint(job, 'summarize', {'model_results':cached})
+    cached[key] = {'parsed': result['parsed'], 'invocation_id': result['invocation_id'],
+                   'content': result.get('content') or ''}
+    worker()._checkpoint(job, 'summarize', {'model_results': cached})
     return cached[key]
 
 
@@ -107,17 +108,21 @@ def summarize(job):
             pieces = chunks(row['segments'], limit)
             if not pieces:
                 raise ValueError('EMPTY_SUBTITLES')
+            output_budget = int(route['max_output_tokens'])
             # Video description and pinned comments give the model extra context
             # without changing what the summary is ultimately anchored to (subtitles).
             context = context_text(row.get('metadata'))
             saved = dict(job.get('checkpoint') or {})
             results = list(saved.get('summary_chunks') or [])
             calls = list(saved.get('summary_calls') or [])
+            raw_output = ''
             with w.LeaseKeeper(w.engine, job) as keeper:
                 for index in range(len(results), len(pieces)):
                     response = _call(job, 'update_generation',
                                      messages(row['title'], pieces[index],
-                                              context=(context if index == 0 else '')))
+                                              context=(context if index == 0 else ''),
+                                               output_tokens=output_budget))
+                    raw_output = response.get('content') or ''
                     results.append(summary_output(response['parsed']))
                     calls.append(response['invocation_id'])
                     w._checkpoint(job, 'summarize', {'summary_chunks': results, 'summary_calls': calls})
@@ -132,7 +137,8 @@ def summarize(job):
                         group = reduced[start:start+2]
                         if len(group) == 1:
                             next_level.append(group[0]); continue
-                        response = _call(job, 'update_generation', messages(row['title'], group, merge=True))
+                        response = _call(job, 'update_generation', messages(row['title'], group, merge=True, output_tokens=output_budget))
+                        raw_output = response.get('content') or ''
                         next_level.append(summary_output(response['parsed']))
                         calls.append(response['invocation_id'])
                     reduced = next_level
@@ -141,11 +147,11 @@ def summarize(job):
                     raise w.FenceLost()
             with w.engine.begin() as conn:
                 _guard(conn, job)
-                saved = one(conn, """INSERT INTO video_summaries(workspace_id,video_key,source_id,version_id,title,summary,points,entities,model_runs)
-                    VALUES(:ws,:key,:sid,:vid,:title,:summary,CAST(:points AS jsonb),CAST(:entities AS jsonb),CAST(:calls AS jsonb))
+                saved = one(conn, """INSERT INTO video_summaries(workspace_id,video_key,source_id,version_id,title,summary,points,links,entities,model_runs)
+                    VALUES(:ws,:key,:sid,:vid,:title,:summary,CAST(:points AS jsonb),CAST(:links AS jsonb),CAST(:entities AS jsonb),CAST(:calls AS jsonb))
                     ON CONFLICT(workspace_id,video_key) DO UPDATE SET video_key=EXCLUDED.video_key RETURNING id""",
                     ws=ws, key=key, sid=row['sid'], vid=row['id'], title=row['title'], summary=result['summary'],
-                    points=js(result['points']), entities=js(result['entities']), calls=js(calls))
+                    points=js(result['points']), links=js(result['links']), entities=js(result['entities']), calls=js(calls))
                 attached = one(conn, 'SELECT round_id FROM summary_round_items WHERE workspace_id=:ws AND source_id=:sid LIMIT 1', ws=ws, sid=row['sid'])
                 if not attached:
                     add_item(conn, new_round(conn, ws, 'manual'), source)
@@ -153,7 +159,8 @@ def summarize(job):
         except gateway.GatewayError as exc:
             w._finish(job, 'blocked_budget' if 'BUDGET' in exc.code else 'failed', {'message': exc.message}, exc.code)
         except ValueError as exc:
-            w._finish(job, 'failed', {'message': '模型总结格式不符合要求，未发布'}, str(exc))
+            w._finish(job, 'failed', {'message': '模型总结格式不符合要求，未发布',
+                                      'raw_output': (raw_output or '')[:2000]}, str(exc))
         finally:
             one(lock, 'SELECT pg_advisory_unlock(hashtextextended(:key,0))', key=str(ws)+key)
 
@@ -161,11 +168,12 @@ def summarize(job):
 def round_items(conn, ws, rid):
     return many(conn, """SELECT i.*,s.title,s.availability,v.id AS summary_id,v.summary,v.points,v.entities,
         s.metadata->>'desc' AS source_description,
-        c.state AS collect_state,c.error_code AS collect_error,p.id AS process_job_id,p.state AS process_state,p.error_code AS process_error
+        c.state AS collect_state,c.error_code AS collect_error,p.id AS process_job_id,p.state AS process_state,p.error_code AS process_error,
+        p.result AS process_result
         FROM summary_round_items i JOIN sources s ON s.id=i.source_id
         LEFT JOIN video_summaries v ON v.workspace_id=i.workspace_id AND v.video_key=i.video_key
         LEFT JOIN jobs c ON c.id=i.collect_job_id
-        LEFT JOIN LATERAL (SELECT j.id,j.state,j.error_code FROM jobs j WHERE j.workspace_id=i.workspace_id
+        LEFT JOIN LATERAL (SELECT j.id,j.state,j.error_code,j.result FROM jobs j WHERE j.workspace_id=i.workspace_id
           AND j.kind='process_source' AND j.input->>'version_id'=s.current_version_id::text
           ORDER BY j.created_at DESC LIMIT 1) p ON true
         WHERE i.workspace_id=:ws AND i.round_id=:rid ORDER BY i.video_key""", ws=ws, rid=rid)
@@ -210,22 +218,31 @@ def tick():
                 next_run_at=now()+make_interval(mins=>interval_minutes) WHERE workspace_id=:ws""", ws=monitor['workspace_id'], jid=job['id'])
 
 
-def _consolidate_entity_names(job, names):
-    """Map each name to a canonical name, merging obvious near-duplicates.
+def _finalize_entities(job, entities):
+    """Second pass over first-pass entity candidates (best-effort).
 
-    One best-effort ``digest_polish`` call; on any failure it falls back to
-    keeping every name as its own canonical name, so a bad model answer can
-    never drop or invent an entity.
+    The per-video summarisation already extracted candidates. This pass hands them
+    back to the model to (a) merge obvious near-duplicates into one canonical name
+    and (b) drop objects that were only mentioned once in passing ("顺带一提") and
+    are not worth a standalone entity. On any failure it keeps every name and drops
+    nothing, so a bad model answer can never drop or invent an entity.
     """
-    mapping = {entity_key(n): n for n in names if n}
-    unique = list(mapping.values())
-    if len(unique) <= 1:
-        return mapping
+    mapping = {entity_key(e['name']): e['name'] for e in entities.values() if e.get('name')}
+    drops = set()
+    if len(mapping) <= 1:
+        return mapping, drops
+    payload = [{'name': e['name'], 'type': e.get('type', '其他'),
+                'descriptions': (e.get('observations') or [])[:3],
+                'videos': len(set(e.get('ids') or []))}
+               for e in entities.values() if e.get('name')]
     prompt = [{'role': 'system', 'content':
-               '下面这些是不同视频总结里识别出的实体名称。把明显是同一个对象的合并为一组并保留一个规范全称；'
-               '不同对象保持独立。不要新增或删除对象。只输出 JSON：'
-               '{"groups":[{"name":"规范全称","members":["原始名称"]}]}，每个原始名称恰好出现一次。'},
-              {'role': 'user', 'content': js(unique)}]
+               '下面这些是不同视频总结里识别出的实体候选。请做两步：'
+               '1) 把明显是同一个对象的合并为一组，每组保留一个规范全称；'
+               '2) 把只在视频里顺带一提、一笔带过、没有实质介绍的对象放进 drop（用原始 name 原样填写）。'
+               '不同对象保持独立；不要新增对象；没有要丢弃的对象就输出空数组。'
+               '只输出 JSON：{"groups":[{"name":"规范全称","members":["原始名称"]}],"drop":["原始名称"]}，'
+               '每个原始名称在 groups 的 members 里恰好出现一次。'},
+              {'role': 'user', 'content': js(payload)}]
     try:
         response = _call(job, 'digest_polish', prompt)
         parsed = response['parsed'] if isinstance(response['parsed'], dict) else None
@@ -241,9 +258,14 @@ def _consolidate_entity_names(job, names):
                 for member in members:
                     if isinstance(member, str) and member.strip():
                         mapping[entity_key(member)] = name
+        raw_drop = parsed.get('drop') if isinstance(parsed, dict) else None
+        if isinstance(raw_drop, list):
+            for name in raw_drop:
+                if isinstance(name, str) and name.strip():
+                    drops.add(entity_key(name))
     except (gateway.GatewayError, ValueError):
         pass
-    return mapping
+    return mapping, drops
 
 
 def _synthesize_daily_summary(job, videos):
@@ -420,11 +442,14 @@ def finish_round(job):
                     entry = entities.setdefault(key, {'name': entity['name'], 'type': entity.get('type', '其他'), 'observations': [], 'ids': []})
                     entry['observations'].append(entity['description'])
                     entry['ids'].append(str(item['summary_id']))
-            # Consolidate near-duplicate names before touching nodes so one object
-            # does not end up split across several entities.
-            canonical = _consolidate_entity_names(job, [e['name'] for e in entities.values()])
+            # Consolidate near-duplicate names and drop passing-mention objects before
+            # touching nodes so one object does not end up split across several entities
+            # and noise does not become a standalone entity.
+            canonical, drops = _finalize_entities(job, entities)
             merged = {}
             for key, entity in entities.items():
+                if key in drops:
+                    continue
                 name = canonical.get(key, entity['name'])
                 entry = merged.setdefault(entity_key(name), {'name': name, 'type': entity['type'], 'observations': [], 'ids': []})
                 entry['observations'].extend(entity['observations'])

@@ -1,6 +1,6 @@
 # FishingNet · AI 多来源信息聚合平台
 
-把关注的信息（B站 视频/资料）自动收集、逐条总结、按轮汇总成日报，每条信息保留原文依据。当前为 **V1 精简版**（迁移 0009 head）。
+把关注的信息（B站 视频/资料）自动收集、逐条总结、按轮汇总成日报，每条信息保留原文依据。当前为 **V1 精简版**（迁移 0011 head）。
 
 ## 当前状态（2026-10-21 · V1 精简版）
 
@@ -8,6 +8,7 @@
 
 - 定时按关键词挑选若干 B站 视频 → 取字幕 → **每个视频只生成一条信息动态（整份视频/资料的总结）**；
 - 每轮全部视频成功或明确失败后，汇总本轮动态、更新相关实体简介、更新当日日报；
+- 实体只建被视频实质讨论的对象，一笔带过的对象不建实体；动态结构化保留项目地址、官网、下载链接；
 - 定期检查已登录 B站 账号收到的 @，把被 @ 的视频送入同一流程；
 - 关键词、手动链接、@ 三个入口共用视频身份去重，已成功总结的视频直接复用。
 
@@ -15,7 +16,7 @@
 
 实现要点：迁移 `0009_simple_v1`；新模块 `app/domain/summaries.py`、`app/jobs/simple.py`、`app/simple_api.py`（`/api/v1/simple/*`）、`apps/web/src/simple.tsx`；`discovery_sources` 增加每天固定钟点 + 时区调度。
 
-**验证**：`pytest -q` **407 passed / 95 warnings（57.83s）**；`npm run build` 通过；`alembic current` = **0009 (head)**；OpenAPI **76 路径 / 0.11.0**。
+**验证**：`pytest -q` **419 passed**（另 2 项 `test_local_readiness.py` 失败，属既有的 `wait_ready` 签名不匹配，与本次改动无关）；`npm run build` 通过；`alembic current` = **0011 (head)**；OpenAPI **76 路径 / 0.11.0**。
 
 **未验证**：真实 B站 关键词发现/字幕/@ 通知、真实模型总结/汇总/实体更新、「每天固定钟点 → 发现 → 总结 → 汇总 → 日报」无人值守端到端尚未用真实服务跑通。
 
@@ -52,7 +53,7 @@ Windows 本地脚本预期 PostgreSQL 二进制位于 `.runtime/pgsql/bin`（EDB
 npm --prefix apps/web run build
 ```
 
-最新结果：**407 项后端测试通过**（真实 PostgreSQL 隔离 schema，无 SQLite 替代）；`tsc -b && vite build` 通过。测试需要 PostgreSQL；自动建立并删除独立 schema，不改正式工作区。API 契约见 `docs/openapi.json`。
+最新结果：**419 项后端测试通过**（真实 PostgreSQL 隔离 schema，无 SQLite 替代；另有 2 项 `test_local_readiness.py` 既存失败与本次无关）；`tsc -b && vite build` 通过。测试需要 PostgreSQL；自动建立并删除独立 schema，不改正式工作区。API 契约见 `docs/openapi.json`。
 
 ## 技术栈
 

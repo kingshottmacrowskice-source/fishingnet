@@ -10,6 +10,8 @@ from pydantic import BaseModel, Field
 from app.auth import current_user
 from app.storage.db import one, many, execute
 from app.jobs import simple
+from app.ai import gateway
+from app.domain import scripts as script_domain
 
 router = APIRouter(prefix='/api/v1/simple')
 User = Annotated[dict, Depends(current_user)]
@@ -154,6 +156,109 @@ def digest(user: User, download: bool = False):
     return {'date': str(day), 'markdown': text, 'summary': row['summary'] if row else ''}
 
 
+def _script_config(conn, ws):
+    row = one(conn, 'SELECT * FROM broadcast_script_configs WHERE workspace_id=:ws', ws=ws)
+    if row:
+        expressions = row['expressions'] if isinstance(row['expressions'], list) else []
+        return {'opening': row['opening'], 'anchor_persona': row['anchor_persona'],
+                'expressions': script_domain.normalize_expressions(expressions)}
+    return {'opening': script_domain.DEFAULT_OPENING, 'anchor_persona': script_domain.DEFAULT_PERSONA,
+            'expressions': list(script_domain.DEFAULT_EXPRESSIONS)}
+
+
+def _gateway_status(code):
+    upstream = {'AUTH_FAILED', 'RATE_LIMITED', 'UPSTREAM_FAILED', 'UPSTREAM_REJECTED',
+                'INVALID_RESPONSE', 'NETWORK_FAILED', 'ENDPOINT_NOT_FOUND', 'UNSUPPORTED_PROTOCOL'}
+    return 502 if code in upstream else 409
+
+
+@router.get('/script')
+def script(user: User):
+    """Current 台本 config plus the latest generated script for today (if any)."""
+    ws = user['workspace_id']
+    with db().connect() as conn:
+        config = _script_config(conn, ws)
+        workspace = one(conn, 'SELECT timezone FROM workspace_settings WHERE id=:ws', ws=ws)
+        day = datetime.now(ZoneInfo(workspace['timezone'])).date()
+        row = one(conn, 'SELECT * FROM broadcast_scripts WHERE workspace_id=:ws AND day=:day', ws=ws, day=day)
+    script = None
+    if row and row['segments']:
+        script = {'date': str(day), 'opening': row['opening'], 'segments': row['segments'],
+                  'updated_at': row['updated_at'].isoformat() if row.get('updated_at') else None}
+    return {'config': config, 'script': script}
+
+
+class ScriptConfigInput(BaseModel):
+    opening: str = ''
+    anchor_persona: str = ''
+    expressions: list[str] = []
+
+
+@router.put('/script-config')
+def save_script_config(body: ScriptConfigInput, user: User):
+    """Save the reusable 台本 settings: opening, anchor persona and preset expressions."""
+    ws = user['workspace_id']
+    opening = (body.opening or '').strip()[:2000]
+    persona = (body.anchor_persona or '').strip()[:2000]
+    expressions = script_domain.normalize_expressions(body.expressions)
+    with db().begin() as conn:
+        execute(conn, """INSERT INTO broadcast_script_configs(workspace_id,opening,anchor_persona,expressions)
+            VALUES(:ws,:opening,:persona,CAST(:expressions AS jsonb))
+            ON CONFLICT(workspace_id) DO UPDATE SET opening=EXCLUDED.opening,
+            anchor_persona=EXCLUDED.anchor_persona,expressions=EXCLUDED.expressions,updated_at=now()""",
+            ws=ws, opening=opening, persona=persona, expressions=json.dumps(expressions, ensure_ascii=False))
+    return {'config': {'opening': opening, 'anchor_persona': persona, 'expressions': expressions}}
+
+
+class ScriptGenerateInput(BaseModel):
+    opening: str | None = None
+    anchor_persona: str | None = None
+    expressions: list[str] | None = None
+
+
+@router.post('/script/generate')
+def generate_script(body: ScriptGenerateInput, user: User):
+    """Generate a news-broadcast 台本 from today's daily digest.
+
+    Uses the saved config unless the request overrides a field. The returned
+    segments carry the fixed format ``[{expression, text}, ...]``.
+    """
+    ws = user['workspace_id']
+    with db().connect() as conn:
+        config = _script_config(conn, ws)
+        workspace = one(conn, 'SELECT timezone FROM workspace_settings WHERE id=:ws', ws=ws)
+        day = datetime.now(ZoneInfo(workspace['timezone'])).date()
+        digest = one(conn, 'SELECT * FROM daily_digests WHERE workspace_id=:ws AND day=:day', ws=ws, day=day)
+        route = one(conn, "SELECT * FROM task_routes WHERE workspace_id=:ws AND task='digest_polish'", ws=ws)
+    opening = (body.opening if body.opening is not None else config['opening']).strip()[:2000] or script_domain.DEFAULT_OPENING
+    persona = (body.anchor_persona if body.anchor_persona is not None else config['anchor_persona']).strip()[:2000]
+    expressions = script_domain.normalize_expressions(body.expressions if body.expressions is not None else config['expressions'])
+    markdown = (digest['markdown'] if digest else '') or ''
+    if not markdown.strip() or '今天还没有生成日报' in markdown:
+        raise HTTPException(409, '今天还没有生成日报，无法生成台本；请先完成一轮视频总结与汇总。')
+    if not route or not route['enabled'] or route['mode'] != 'model':
+        raise HTTPException(409, '请在模型设置中启用「每轮汇总与实体更新」（日报润色）任务后再生成台本')
+    prompt = script_domain.messages(opening, persona, expressions, markdown)
+    if sum(len(m['content'].encode('utf-8')) for m in prompt) + 128 > route['max_input_tokens']:
+        raise HTTPException(409, '日报内容超过模型输入上限，请在模型设置中提高输入 token 上限')
+    try:
+        result = gateway.invoke_messages('digest_polish', workspace_id=ws, messages=prompt,
+                                         summary={'input_kind': 'broadcast_script'})
+    except gateway.GatewayError as exc:
+        raise HTTPException(_gateway_status(exc.code), exc.message)
+    try:
+        segments = script_domain.script_output(result.get('parsed'), expressions, opening)
+    except ValueError as exc:
+        raise HTTPException(502, '模型输出的台本格式不符合要求，请重试；错误：' + str(exc))
+    with db().begin() as conn:
+        execute(conn, """INSERT INTO broadcast_scripts(workspace_id,day,opening,segments,updated_at)
+            VALUES(:ws,:day,:opening,CAST(:segments AS jsonb),now())
+            ON CONFLICT(workspace_id,day) DO UPDATE SET opening=EXCLUDED.opening,
+            segments=EXCLUDED.segments,updated_at=now()""",
+            ws=ws, day=day, opening=opening, segments=json.dumps(segments, ensure_ascii=False))
+    return {'date': str(day), 'opening': opening, 'segments': segments}
+
+
 class MonitorInput(BaseModel):
     enabled: bool = False
     network_authorized: bool = False
@@ -213,7 +318,7 @@ def retry_round(round_id: uuid.UUID, user: User):
 # 从而能干净地删除 source_versions / nodes / relations 等带约束的表；CASCADE 只影响
 # 被清空表之间的外键，不会触及上方保留表（保留表不会引用内容表）。
 _CLEAR_CONTENT_TABLES = (
-    'daily_digests', 'summary_entity_history', 'nodes', 'summary_round_items',
+    'broadcast_scripts', 'daily_digests', 'summary_entity_history', 'nodes', 'summary_round_items',
     'summary_rounds', 'video_summaries', 'source_versions', 'sources',
     'discovery_run_items', 'discovery_runs', 'discovery_sources',
     'mention_receipts', 'mention_monitors', 'jobs', 'job_attempts',

@@ -2844,7 +2844,7 @@ def ai_invocations(user:User,limit:int=20,cursor:str|None=None,task:str='',statu
     with engine.connect() as conn:
         rows=many(conn,"""SELECT id,task,status,provider_name,model_label,request_fingerprint,input_summary,
               attempts,input_tokens,output_tokens,cached_tokens,cost_estimate,cost_settled,cost_status,
-              currency,error_code,error_message,latency_ms,created_at,finished_at
+              currency,error_code,error_message,response_content,latency_ms,created_at,finished_at
             FROM ai_invocations WHERE workspace_id=:ws
               AND (:task='' OR task=:task) AND (:status='' OR status=:status)
               AND (CAST(:cur_c AS timestamptz) IS NULL OR (created_at,id)<(CAST(:cur_c AS timestamptz),CAST(:cur_i AS uuid)))

@@ -408,13 +408,14 @@ def invoke_messages(task: str, *, workspace_id, messages: list[dict], summary=No
                     attempts=:attempts,attempt_log=CAST(:log AS jsonb),provider_request_id=:rid,
                     input_tokens=:tin,output_tokens=:tout,cached_tokens=:cached,
                     cost_estimate=:cost,cost_settled=:cost,cost_status=:cstatus,latency_ms=:latency,
-                    model_label=:mlabel,provider_name=:pname
+                    model_label=:mlabel,provider_name=:pname,response_content=:rcontent
                     WHERE id=:id""", id=invocation_id, attempts=len(attempt_log) + 1,
                     log=json.dumps(attempt_log, ensure_ascii=False), rid=result.get('provider_request_id') or '',
                     tin=usage['input_tokens'], tout=usage['output_tokens'],
                     cached=usage['cached_tokens'], cost=cost, cstatus=cost_status,
                     latency=latency, mlabel=candidate['display_name'],
-                    pname=candidate['provider_name'])
+                    pname=candidate['provider_name'],
+                    rcontent=(result.get('content') or '')[:12000])
             parsed = _parse_json(result.get('content'))
             return {'invocation_id': invocation_id, 'status': 'succeeded', 'task': task,
                     'task_label': TASK_LABELS[task], 'provider': candidate['provider_name'],

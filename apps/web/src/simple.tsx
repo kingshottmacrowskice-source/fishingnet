@@ -1,6 +1,6 @@
 import {Modal} from './modal'
 import React, {useEffect, useState} from 'react'
-import {Activity, Clock3, Network, BookOpen, Settings, RefreshCw, Plus, ArrowUpRight} from 'lucide-react'
+import {Activity, Clock3, Network, BookOpen, Settings, RefreshCw, Plus, ArrowUpRight, Mic, Copy, Wand2} from 'lucide-react'
 
 type Row = Record<string, any>
 type Props = {api:(path:string, options?:RequestInit)=>Promise<any>, page:string, navigate:(page:string)=>void,
@@ -37,18 +37,18 @@ export function SimpleHome(p:Props){
  const hiddenCount=Number(data.hidden_count||0)
  const entityItems:Row[]=(data.items||[]).filter((e:Row)=>showHidden||!e.hidden)
  const mentionsPanel=<section className="panel"><h3>收到 @ 的视频</h3><p className="muted">定期检查已登录 B站账号收到的 @；识别到视频后自动加入总结。多个入口共用去重记录。</p><label>检查间隔（分钟）<input type="number" min={5} max={10080} value={monitor.interval_minutes} onChange={e=>setMonitor({...monitor,interval_minutes:e.target.value})}/></label><label className="check"><input type="checkbox" checked={monitor.network_authorized} onChange={e=>setMonitor({...monitor,network_authorized:e.target.checked})}/>允许读取此账号收到的 @ 通知</label><label className="check"><input type="checkbox" checked={monitor.enabled} onChange={e=>setMonitor({...monitor,enabled:e.target.checked})}/>启用定期检查</label><button className="primary" disabled={saving} onClick={saveMonitor}>保存 @ 设置</button><p className="small-note">最近检查：{date(monitor.last_checked_at)||'尚未检查'}{monitor.error_code?' · '+monitor.error_code:''}</p></section>
- const roundsPanel=<section className="panel"><h3>每轮运行记录</h3>{!data.items?.length&&<p className="muted">运行后，这里会显示视频处理结果和本轮总结。</p>}{data.items?.map((run:Row)=><article className="discovery-card" key={run.id}><div className="card-meta"><span className="tag">{labels[run.origin]}</span><strong>{labels[run.state]}</strong><span className="card-time">{date(run.created_at)}</span></div><p>{(run.items||[]).filter((i:Row)=>i.summary_id).length} / {(run.items||[]).length} 个视频已总结</p>{run.error_code&&<p className="error">{run.error_code}</p>}<button className="outline" onClick={()=>setExpanded(expanded===run.id?null:run.id)}>查看本轮</button>{['failed','partial'].includes(run.state)&&<button className="outline" onClick={()=>retry(run.id)}>重试未完成项</button>}{expanded===run.id&&<><p className="v1-summary">{run.report||'等待本轮处理完成'}</p>{(run.items||[]).map((item:Row)=><div className="status-row" key={item.video_key}><span>{item.title}</span><strong>{item.summary_id?'已总结':item.process_error||item.collect_error||item.process_state||item.collect_state||'无字幕'}</strong></div>)}</>}</article>)}</section>
+ const roundsPanel=<section className="panel"><h3>每轮运行记录</h3>{!data.items?.length&&<p className="muted">运行后，这里会显示视频处理结果和本轮总结。</p>}{data.items?.map((run:Row)=><article className="discovery-card" key={run.id}><div className="card-meta"><span className="tag">{labels[run.origin]}</span><strong>{labels[run.state]}</strong><span className="card-time">{date(run.created_at)}</span></div><p>{(run.items||[]).filter((i:Row)=>i.summary_id).length} / {(run.items||[]).length} 个视频已总结</p>{run.error_code&&<p className="error">{run.error_code}</p>}<button className="outline" onClick={()=>setExpanded(expanded===run.id?null:run.id)}>查看本轮</button>{['failed','partial'].includes(run.state)&&<button className="outline" onClick={()=>retry(run.id)}>重试未完成项</button>}{expanded===run.id&&<><p className="v1-summary">{run.report||'等待本轮处理完成'}</p>{(run.items||[]).map((item:Row)=><div key={item.video_key}><div className="status-row"><span>{item.title}</span><strong>{item.summary_id?'已总结':item.process_error||item.collect_error||item.process_state||item.collect_state||'无字幕'}</strong></div>{!item.summary_id&&String(item.process_error||'').startsWith('INVALID_SUMMARY')&&item.process_result?.raw_output&&<details className="raw-output"><summary>查看模型原始输出</summary><pre>{item.process_result.raw_output}</pre></details>}</div>)}</>}</article>)}</section>
  return <div className="shell"><aside className="sidebar"><a className="brand" href="#/feed"><span className="brand-icon"><Network/></span>FishingNet<span className="beta">V1</span></a><div className="workspace"><div><strong>把视频变成可读的信息</strong><small>关键词发现 · 字幕总结 · 每日汇总</small></div></div>
  <nav>{nav.map(([id,label,Icon])=><button key={id} className={(page===id||(id==='settings'&&['models','platforms'].includes(page)))?'selected':''} onClick={()=>p.navigate(id)}><Icon size={18}/>{label}</button>)}</nav>
  <div className="sidebar-bottom"><p className="small-note">每个视频一条动态。相同视频自动复用已有总结。</p></div></aside>
  <section className="main"><header><strong>{title}</strong><div className="top-actions"><button className="outline" onClick={reload}><RefreshCw size={16}/>刷新</button><button className="primary" onClick={p.importSource}><Plus size={16}/>添加视频 / 资料</button></div></header><main>
  <div className="page-heading"><div><div className="eyebrow">FISHINGNET · DAILY READING</div><h1>{title}</h1><p>{page==='feed'?'一份视频，一条总结。阅读要点，按需回到原视频。':page==='schedule'?'设置关键词和频率，自动收集、总结并更新日报。':page==='entities'?'每轮根据新内容更新对象简介，保留关联来源。':'把每天值得关注的信息集中起来。'}</p></div></div>
  {error&&<div role="alert" className="error">{error}</div>}
- {page==='feed'&&<><label className="search"><input aria-label="搜索总结" placeholder="搜索视频标题或总结…" value={q} onChange={e=>setQ(e.target.value)}/></label><div className="v1-feed">{data.items?.map((item:Row)=><article className="update-card" key={item.id}><div className="card-meta"><span className="tag green">视频 / 资料总结</span><span className="card-time">{date(item.created_at)}</span></div><h2>{item.title}</h2><p className="v1-summary">{item.summary}</p><ul>{item.points?.map((point:string,index:number)=><li key={index}>{point}</li>)}</ul><div className="card-footer"><span className="muted">{item.author_name||'导入资料'}</span>{item.canonical_url&&<a className="evidence-link" href={item.canonical_url} target="_blank" rel="noreferrer">查看原视频<ArrowUpRight size={15}/></a>}</div><small className="muted">根据来源内容总结</small></article>)}</div>{!loading&&!data.items?.length&&<div className="empty"><BookOpen/><h3>还没有视频总结</h3><p>先配置模型与 B站账号，然后创建一个关键词任务。</p><button className="primary" onClick={()=>p.navigate('schedule')}>设置自动任务</button></div>}{next!==null&&<button className="outline" disabled={loading} onClick={more}>加载更多</button>}</>}
+ {page==='feed'&&<><label className="search"><input aria-label="搜索总结" placeholder="搜索视频标题或总结…" value={q} onChange={e=>setQ(e.target.value)}/></label><div className="v1-feed">{data.items?.map((item:Row)=><article className="update-card" key={item.id}><div className="card-meta"><span className="tag green">视频 / 资料总结</span><span className="card-time">{date(item.created_at)}</span></div><h2>{item.title}</h2><p className="v1-summary">{item.summary}</p><ul>{item.points?.map((point:string,index:number)=><li key={index}>{point}</li>)}</ul>{item.links?.length>0&&<div className="v1-links">{item.links.map((l:Row,i:number)=><a key={i} href={l.url} target="_blank" rel="noreferrer">{l.label||l.url}<ArrowUpRight size={13}/></a>)}</div>}<div className="card-footer"><span className="muted">{item.author_name||'导入资料'}</span>{item.canonical_url&&<a className="evidence-link" href={item.canonical_url} target="_blank" rel="noreferrer">查看原视频<ArrowUpRight size={15}/></a>}</div><small className="muted">根据来源内容总结</small></article>)}</div>{!loading&&!data.items?.length&&<div className="empty"><BookOpen/><h3>还没有视频总结</h3><p>先配置模型与 B站账号，然后创建一个关键词任务。</p><button className="primary" onClick={()=>p.navigate('schedule')}>设置自动任务</button></div>}{next!==null&&<button className="outline" disabled={loading} onClick={more}>加载更多</button>}</>}
  {page==='schedule'&&<><div className="tabs">{([['keywords','关键词任务'],['mentions','收到的 @'],['rounds','运行记录']] as const).map(([id,label])=><button key={id} className={scheduleTab===id?'active':''} onClick={()=>setScheduleTab(id)}>{label}</button>)}</div>{scheduleTab==='keywords'&&p.schedule}{scheduleTab==='mentions'&&mentionsPanel}{scheduleTab==='rounds'&&roundsPanel}</>}
  {page==='jobs'&&roundsPanel}
  {page==='entities'&&<><div className="entities-toolbar"><span className="muted">{entityItems.length} 个实体{hiddenCount>0?` · 已隐藏 ${hiddenCount}`:''}；点开可隐藏、恢复或删除</span>{hiddenCount>0&&<button className="outline" onClick={()=>setShowHidden(v=>!v)}>{showHidden?'不显示已隐藏':'显示已隐藏'}</button>}</div><div className="tile-grid">{entityItems.map((entity:Row)=><article className={'tile'+(entity.hidden?' is-hidden':'')} key={entity.id} role="button" tabIndex={0} onClick={()=>setEntity(entity)} onKeyDown={e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();setEntity(entity)}}}><Network/><h2>{entity.canonical_name}{entity.metadata?.entity_type&&<span className="tag">{entity.metadata.entity_type}</span>}{entity.hidden&&<span className="tag amber">{entity.hidden_by==='auto'?'自动隐藏':'已隐藏'}</span>}</h2><p className="v1-summary">{entity.description}</p><span className="muted">{entity.summaries?.length||0} 条信息动态 · {entity.sources?.length||0} 份视频资源 · 点击查看详情</span></article>)}{!loading&&!entityItems.length&&<p className="muted">{hiddenCount>0?'没有显示的实体，可点右上角“显示已隐藏”。':'第一轮汇总完成后，相关实体会出现在这里。'}</p>}</div></>}
- {page==='digests'&&<section className="panel"><div className="section-caption"><h3>{data.date}</h3><a className="outline" href="/api/v1/simple/digest?download=true">下载日报</a></div><div className="v1-summary">{data.markdown||'正在读取日报…'}</div></section>}
+ {page==='digests'&&<><section className="panel"><div className="section-caption"><h3>{data.date}</h3><a className="outline" href="/api/v1/simple/digest?download=true">下载日报</a></div><div className="v1-summary">{data.markdown||'正在读取日报…'}</div></section><ScriptPanel api={p.api}/></>}
  {['settings','models','platforms'].includes(page)&&<><div className="tabs">{[['settings','预算与账户'],['models','模型'],['platforms','平台账号']].map(([id,label])=><button key={id} className={id===page?'active':''} onClick={()=>p.navigate(id)}>{label}</button>)}</div>{page==='settings'?p.settings:page==='models'?p.models:p.platforms}</>}
  {loading&&<p role="status" className="muted">正在读取…</p>}
  {entity&&<EntityModal entity={entity} api={p.api} onClose={()=>setEntity(null)} onChanged={()=>{setEntity(null);reload()}}/>}
@@ -87,4 +87,51 @@ function EntityModal({entity,api,onClose,onChanged}:{entity:Row,api:Props['api']
    {sources.length===0?<p className="entity-empty">暂无视频资源。</p>:sources.map((s:Row)=><article className="entity-source" key={s.id}>{s.platform&&<span className="tag">{s.platform}</span>}{s.canonical_url?<a href={s.canonical_url} target="_blank" rel="noreferrer">{s.title||'查看资源'}<ArrowUpRight size={15}/></a>:<strong>{s.title||'未命名资源'}</strong>}</article>)}</aside></div>
   </div>
  </Modal>
+}
+
+function ScriptPanel({api}:{api:Props['api']}){
+ const [config,setConfig]=useState<Row|null>(null),[script,setScript]=useState<Row|null>(null)
+ const [opening,setOpening]=useState(''),[persona,setPersona]=useState(''),[exprText,setExprText]=useState('')
+ const [busy,setBusy]=useState(false),[error,setError]=useState(''),[notice,setNotice]=useState(''),[copied,setCopied]=useState(false)
+ const load=()=>api('/simple/script').then(r=>{setConfig(r.config);setScript(r.script||null);setOpening(r.config?.opening||'');setPersona(r.config?.anchor_persona||'');setExprText((r.config?.expressions||[]).join('，'))}).catch((e:any)=>setError(e.message))
+ useEffect(()=>{load()},[])
+ const splitExpr=()=>exprText.split(/[,，、\n]/).map(s=>s.trim()).filter(Boolean)
+ async function save(){
+  if(busy)return;setBusy(true);setError('');setNotice('')
+  try{const r=await api('/simple/script-config',{method:'PUT',body:JSON.stringify({opening,anchor_persona:persona,expressions:splitExpr()})});setConfig(r.config);setNotice('台本设置已保存')}
+  catch(e:any){setError(e.message)}
+  finally{setBusy(false)}
+ }
+ async function generate(){
+  if(busy)return;setBusy(true);setError('');setNotice('')
+  try{const r=await api('/simple/script/generate',{method:'POST',body:JSON.stringify({opening,anchor_persona:persona,expressions:splitExpr()})});setScript(r);setNotice('台本已生成')}
+  catch(e:any){setError(e.message)}
+  finally{setBusy(false)}
+ }
+ const segments:Row[]=script?.segments||[]
+ const plain=segments.map((s:Row)=>`【${s.expression}】${s.text}`).join('\n')
+ async function copy(){
+  try{await navigator.clipboard.writeText(plain);setCopied(true);setTimeout(()=>setCopied(false),1500)}
+  catch(e:any){setError('复制失败，请手动选择文本复制')}
+ }
+ return <section className="panel script-panel">
+  <div className="section-caption"><h3><Mic size={16}/>台本播报</h3><span className="tag green">新闻联播式</span></div>
+  <p className="small-note">把今天的日报改写成一段播报台本：每个片段标注一个预设表情和对应文案，便于数字人主播逐句播报。开场白与主播人物设定可自定义，保存后再次生成会沿用。</p>
+  <div className="script-config">
+   <label>开场白<textarea rows={2} value={opening} onChange={e=>setOpening(e.target.value)} placeholder={config?.opening||''}/></label>
+   <label>主播人物设定<textarea rows={2} value={persona} onChange={e=>setPersona(e.target.value)} placeholder={config?.anchor_persona||''}/></label>
+   <label>预设表情（逗号分隔）<input value={exprText} onChange={e=>setExprText(e.target.value)} placeholder="微笑，认真，点头，严肃"/></label>
+  </div>
+  <div className="tile-actions">
+   <button className="outline" disabled={busy} onClick={save}>{busy?'保存中…':'保存台本设置'}</button>
+   <button className="primary" disabled={busy} onClick={generate}><Wand2 size={16}/>{busy?'生成中…':'生成台本'}</button>
+   {segments.length>0&&<button className="outline" onClick={copy}><Copy size={14}/>{copied?'已复制':'复制台本'}</button>}
+  </div>
+  {error&&<div role="alert" className="error">{error}</div>}
+  {notice&&<div role="status" className="notice">{notice}</div>}
+  {segments.length>0&&<div className="script-result">
+   <div className="section-caption"><h4>{script?.date} · {segments.length} 个片段</h4></div>
+   {segments.map((s:Row,i:number)=><div className="script-segment" key={i}><span className="script-expression">{s.expression}</span><p>{s.text}</p></div>)}
+  </div>}
+ </section>
 }

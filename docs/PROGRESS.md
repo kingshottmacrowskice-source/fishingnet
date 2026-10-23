@@ -2,13 +2,15 @@
 
 > 各里程碑的**详细**开发记录已归档到 [docs/HISTORY.md](HISTORY.md)。本文件只保留当前进度与里程碑一览。
 
-## 当前进度（2026-10-21 · V1 精简版，迁移 0009 head）
+## 当前进度（2026-10-22 · V1 精简版，迁移 0011 head）
 
 用户把第一版收敛为「定时按关键词选 B站 视频取字幕 → 每个视频一条总结 → 每轮汇总 + 实体更新 + 日报 → 定期检查 @ → 视频不重复总结」，其他功能主界面暂时隐藏（目标见 [V1-SCOPE.md](V1-SCOPE.md)）。
 
-- 新增迁移 `0009_simple_v1`；新模块 `summaries.py` / `jobs/simple.py` / `simple_api.py` / `web/src/simple.tsx`。
+- 新增迁移 `0009_simple_v1`、`0010_daily_digest`、`0011_summary_links`；新模块 `summaries.py` / `jobs/simple.py` / `simple_api.py` / `web/src/simple.tsx`。
 - 调度支持每天固定钟点 + 时区（`discovery_sources.daily_time/schedule_timezone`）。
-- 验证：`pytest -q` **407 passed / 95 warnings（57.83s）**；`npm run build` 通过；`alembic current` = **0009 (head)**；OpenAPI **76 路径 / 0.11.0**。
+- 实体只建被视频实质讨论的对象：提取提示词排除「顺带一提/一笔带过」，每轮再用一次 `digest_polish` 把候选交回模型合并近重复并剔除一笔带过项（失败安全回退为不丢弃）。
+- 信息动态以 `video_summaries.links` 结构化保留项目地址、官网、下载链接，并在动态卡片中展示。
+- 验证：`pytest -q` **419 passed / 2 pre-existing failures（test_local_readiness.py 的 `wait_ready` 签名不匹配，与本次无关）**；`npm run build` 通过；`alembic current` = **0011 (head)**。
 - 未验证：真实 B站 发现/字幕/@、真实模型总结/汇总/实体更新、无人值守端到端。
 
 ## 里程碑一览

@@ -63,6 +63,9 @@
 .v1-feed h2 { font-size: 22px; line-height: 1.5; margin: 14px 0; }
 .v1-feed li { line-height: 1.8; margin: 8px 0; }
 .v1-feed .update-card { margin-bottom: 24px; }
+.v1-links{display:flex;flex-wrap:wrap;gap:8px;margin:4px 0 12px}
+.v1-links a{display:inline-flex;align-items:center;gap:6px;font-size:12px;color:#34775a;border:1px solid #dce8df;border-radius:999px;padding:5px 11px;background:#f7fbf8}
+.v1-links a:hover{background:#eef6f1}
 .tile[role=button]{cursor:pointer;transition:border-color .15s ease,box-shadow .15s ease}
 .tile[role=button]:hover,.tile[role=button]:focus-visible{border-color:#27745d;box-shadow:0 6px 18px rgba(39,116,93,.12)}
 .entity-modal{max-height:85vh;overflow-y:auto}
@@ -107,3 +110,20 @@
 .entity-actions .danger{color:#a35d42;border:1px solid #efd3c8;background:#fff8f5;border-radius:6px;padding:9px 13px;font-size:11px}
 .entity-actions .danger:hover{background:#fff1ec}
 @media(max-width:700px){.app-modal .form-row,.entity-columns{grid-template-columns:1fr}.entity-hero{padding:22px 20px}.entity-content{padding:22px 20px}.entity-hero h2{font-size:21px}.platform-account-head{padding:18px}.platform-account-body{padding:0 18px 18px}}
+/* Broadcast script (台本) generation. */
+.script-panel{margin-top:16px}
+.script-panel .section-caption h3{display:flex;align-items:center;gap:8px}
+.script-config{max-width:680px;margin:4px 0 12px}
+.script-config label{display:block;font-size:12px;margin:13px 0;color:#708273}
+.script-config input,.script-config textarea{margin-top:7px}
+.script-result{margin-top:18px;padding:18px;border:1px dashed #d9e2dc;border-radius:10px;background:#fbfcfa}
+.script-result .section-caption h4{margin:0}
+.script-segment{display:flex;align-items:flex-start;gap:12px;padding:12px 0;border-bottom:1px solid #eef1ef}
+.script-segment:last-child{border-bottom:0}
+.script-expression{flex:0 0 auto;min-width:56px;text-align:center;font-size:12px;font-weight:600;color:#27745d;background:#eaf3ee;border:1px solid #d4e5db;border-radius:999px;padding:5px 12px}
+.script-segment p{margin:0;font-size:14px;line-height:1.85;color:#3c4d43;white-space:pre-wrap;overflow-wrap:anywhere}
+/* Raw model output inspection. */
+.call-row{border-bottom:1px solid #eff1ef;padding:4px 0 2px}
+.raw-output{margin:6px 0 10px;border:1px dashed #d9e2dc;border-radius:8px;padding:8px 12px;background:#fbfcfa}
+.raw-output summary{cursor:pointer;font-size:12px;color:#34775a;font-weight:600}
+.raw-output pre{margin:10px 0 0;white-space:pre-wrap;word-break:break-word;font-size:12px;line-height:1.7;color:#40514c;background:#fff;border:1px solid #e7ebe8;border-radius:6px;padding:10px;max-height:320px;overflow:auto}

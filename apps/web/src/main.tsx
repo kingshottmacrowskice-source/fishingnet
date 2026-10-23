@@ -666,9 +666,12 @@ function ModelsPanel({bump}:{bump:()=>void}){
     {(cost.groups||[]).map((g:Row,i:number)=><div className="status-row" key={i}><span>{g.day} · {labels[g.task]||g.task||'连接测试'} · {g.provider_name||'—'} / {g.model_label||'—'}</span><strong>{g.calls} 次 · {Number(g.input_tokens)+Number(g.output_tokens)} token · {g.cost_status==='unknown'?'未知':'估算'} {Number(g.settled_total).toFixed(4)}</strong></div>)}
    </div>}
    <div className="section-caption"><h4>最近调用</h4><span className="tag">{calls.length} 条</span></div>
-   {calls.length===0?<p className="muted">还没有模型调用。Mock 调用也会记录在此。</p>:calls.map(c=><div className="status-row" key={c.id}>
-    <span>{c.task_label} · {c.provider_name||'—'} / {c.model_label||'—'} · {date(c.created_at)}</span>
-    <strong>{labels[c.status]||c.status} · {c.cost_status==='unknown'?'费用未知':'费用 '+Number(c.cost_settled||0).toFixed(4)+' '+c.currency}{c.error_code?' · '+c.error_code:''}</strong>
+   {calls.length===0?<p className="muted">还没有模型调用。Mock 调用也会记录在此。</p>:calls.map(c=><div className="call-row" key={c.id}>
+    <div className="status-row">
+     <span>{c.task_label} · {c.provider_name||'—'} / {c.model_label||'—'} · {date(c.created_at)}</span>
+     <strong>{labels[c.status]||c.status} · {c.cost_status==='unknown'?'费用未知':'费用 '+Number(c.cost_settled||0).toFixed(4)+' '+c.currency}{c.error_code?' · '+c.error_code:''}</strong>
+    </div>
+    {c.response_content&&<details className="raw-output"><summary>查看模型原始输出</summary><pre>{c.response_content}</pre></details>}
    </div>)}
   </>}
  </div>

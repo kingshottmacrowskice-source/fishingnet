@@ -117,6 +117,15 @@ def test_malformed_summary_never_published(v1,monkeypatch):
     assert v1.get('/api/v1/simple/feed').json()['items']==[]
 
 
+def test_malformed_summary_exposes_raw_model_output(v1,monkeypatch):
+    raw='```json\n{"summary": 不是合法 JSON}\n```'
+    monkeypatch.setattr(gateway,'invoke_messages',lambda *a,**k:{'parsed':{'summary':None},'invocation_id':'bad','content':raw})
+    import_text(v1);drain()
+    item=v1.get('/api/v1/simple/rounds').json()['items'][0]['items'][0]
+    assert item['process_error']=='INVALID_SUMMARY'
+    assert item['process_result']['raw_output']==raw
+
+
 def test_mentions_disabled_does_not_enqueue(v1):
     v1.put('/api/v1/simple/mentions',json={'enabled':True,'network_authorized':False,'interval_minutes':5})
     simple.tick()
@@ -241,6 +250,53 @@ def test_summary_output_drops_vague_entities():
     assert [e['name'] for e in out['entities']] == ['DeepSeek', '必剪']
 
 
+def test_summary_output_preserves_links():
+    value = {'summary': '介绍 DeepSeek，官网与仓库见下。', 'points': ['要点'],
+             'links': [{'label': '官网', 'url': 'https://www.deepseek.com/'},
+                       {'label': '仓库', 'url': 'https://github.com/deepseek-ai/DeepSeek-V3。'},
+                       'https://example.com/download',
+                       {'label': '', 'url': 'ftp://not-http'},
+                       '不是链接'],
+             'entities': []}
+    out = summary_output(value)
+    links = out['links']
+    assert [l['url'] for l in links] == ['https://www.deepseek.com/', 'https://github.com/deepseek-ai/DeepSeek-V3', 'https://example.com/download']
+    assert links[0]['label'] == '官网'
+    assert links[2]['label'] == '链接'
+
+
+def test_summary_links_are_preserved_in_feed(v1, monkeypatch):
+    monkeypatch.setattr(gateway, 'invoke_messages', lambda task, **kwargs: {
+        'parsed': ({'summary': '介绍工具 A。', 'points': ['要点'],
+                    'links': [{'label': '官网', 'url': 'https://toola.example.com'},
+                              {'label': '仓库', 'url': 'https://github.com/example/tool-a'}],
+                    'entities': [{'name': '工具 A', 'type': '工具', 'description': '离线工具'}]}
+                   if task == 'update_generation' else {'text': '本轮汇总'}),
+        'invocation_id': 'x'})
+    import_text(v1); drain(); simple.tick(); drain()
+    item = v1.get('/api/v1/simple/feed').json()['items'][0]
+    assert [(l['label'], l['url']) for l in item['links']] == [('官网', 'https://toola.example.com'), ('仓库', 'https://github.com/example/tool-a')]
+
+
+def test_passing_mention_entity_is_dropped(v1, monkeypatch):
+    def invoke(task, **kwargs):
+        system = str(kwargs['messages'][0]['content'])
+        if task == 'update_generation':
+            return {'parsed': {'summary': '重点介绍工具 A，顺带提到工具 B。', 'points': ['要点'],
+                               'entities': [{'name': '工具 A', 'type': '工具', 'description': '重点介绍的离线工具'},
+                                            {'name': '工具 B', 'type': '工具', 'description': '一笔带过'}],
+                               'links': []},
+                    'invocation_id': 'a'}
+        if 'groups' in system:
+            return {'parsed': {'groups': [{'name': '工具 A', 'members': ['工具 A']}],
+                               'drop': ['工具 B']},
+                    'invocation_id': 'g'}
+        return {'parsed': {'text': '本轮汇总'}, 'invocation_id': 'r'}
+    monkeypatch.setattr(gateway, 'invoke_messages', invoke)
+    import_text(v1); drain(); simple.tick(); drain()
+    assert [e['canonical_name'] for e in v1.get('/api/v1/simple/entities').json()['items']] == ['工具 A']
+
+
 def test_summary_prompt_includes_description_and_pinned_comments(v1):
     result=import_text(v1)
     with v1.engine.begin() as conn:
@@ -345,3 +401,11 @@ def test_auto_hide_respects_a_title_from_an_earlier_round(v1,monkeypatch):
     # The second video never names it, but the first video's title already introduced it.
     import_text(v1,'第二轮内容','工具 A 更新');drain();simple.tick();drain()
     assert '某某大学' in [e['canonical_name'] for e in v1.get('/api/v1/simple/entities').json()['items']]
+
+
+def test_summary_prompt_tells_model_the_output_budget():
+    from app.domain.summaries import messages
+    prompt = messages('标题', '材料', output_tokens=4096)
+    system = prompt[0]['content']
+    assert '4096' in system and '300 字' in system and '60 字' in system
+    assert '输出上限' not in messages('标题', '材料')[0]['content']
